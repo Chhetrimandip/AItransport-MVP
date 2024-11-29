@@ -104,14 +104,8 @@ const Home = () => {
     navigate('/login');
   };
 
-  const handleLocationSelect = ({ origin, destination, route }) => {
-    console.log('Selected route:', {
-      origin,
-      destination,
-      distance: route?.routes[0]?.legs[0]?.distance?.text,
-      duration: route?.routes[0]?.legs[0]?.duration?.text,
-    });
-    // You can use this data to search for available transport options
+  const handleLocationSelect = (location) => {
+    console.log('Selected location:', location);
   };
 
   // Show loading state while checking authentication
