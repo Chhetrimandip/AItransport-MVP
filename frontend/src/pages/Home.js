@@ -24,6 +24,7 @@ import {
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDownIcon, CalendarIcon, TimeIcon, StarIcon } from '@chakra-ui/icons';
+import Map from '../components/Map';
 
 const Home = () => {
   const [user, setUser] = useState(null);
@@ -65,37 +66,32 @@ const Home = () => {
   }, [navigate]);
 
   const fetchRecentRoutes = async () => {
-    const token = localStorage.getItem('userToken');
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-
     try {
       const response = await fetch('http://localhost:5000/api/routes/recent', {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${localStorage.getItem('userToken')}`
         }
       });
-      
+
+      if (response.status === 404) {
+        setRecentRoutes([]);
+        return;
+      }
+
       if (!response.ok) {
-        if (response.status === 401) {
-          // Token expired or invalid
-          localStorage.clear();
-          navigate('/login');
-          return;
-        }
         throw new Error('Failed to fetch routes');
       }
-      
+
       const data = await response.json();
       setRecentRoutes(data);
     } catch (error) {
+      console.error('Error fetching routes:', error);
+      setRecentRoutes([]);
       toast({
-        title: 'Error fetching routes',
-        description: error.message,
-        status: 'error',
-        duration: 5000,
+        title: 'Note',
+        description: 'No routes available at the moment',
+        status: 'info',
+        duration: 3000,
         isClosable: true,
       });
     } finally {
@@ -106,6 +102,16 @@ const Home = () => {
   const handleLogout = () => {
     localStorage.clear(); // Clear all localStorage
     navigate('/login');
+  };
+
+  const handleLocationSelect = ({ origin, destination, route }) => {
+    console.log('Selected route:', {
+      origin,
+      destination,
+      distance: route?.routes[0]?.legs[0]?.distance?.text,
+      duration: route?.routes[0]?.legs[0]?.duration?.text,
+    });
+    // You can use this data to search for available transport options
   };
 
   // Show loading state while checking authentication
@@ -215,6 +221,12 @@ const Home = () => {
               </CardBody>
             </Card>
           </SimpleGrid>
+
+          {/* Select Destination */}
+          <Box>
+            <Heading size="md" mb={4}>Select Destination</Heading>
+            <Map onLocationSelect={handleLocationSelect} />
+          </Box>
 
           {/* Recent Routes */}
           <Box>
