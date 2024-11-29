@@ -1,14 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const {
-  createRoute,
-  getNearbyRoutes,
-  updateRouteStatus
-} = require('../controllers/routeController');
+const { getRecentRoutes } = require('../controllers/routeController');
 const { protect } = require('../middleware/authMiddleware');
 
-router.post('/', protect, createRoute);
-router.get('/nearby', getNearbyRoutes);
-router.patch('/:id/status', protect, updateRouteStatus);
+router.get('/recent', protect, getRecentRoutes);
 
 module.exports = router;

@@ -79,8 +79,17 @@ const updateRouteStatus = asyncHandler(async (req, res) => {
   res.json(route);
 });
 
+// @desc    Get recent routes
+// @route   GET /api/routes/recent
+// @access  Private
+const getRecentRoutes = asyncHandler(async (req, res) => {
+  const routes = await Route.find().sort({ createdAt: -1 }).limit(5);
+  res.json(routes);
+});
+
 module.exports = {
   createRoute,
   getNearbyRoutes,
-  updateRouteStatus
+  updateRouteStatus,
+  getRecentRoutes
 };
