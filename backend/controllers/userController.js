@@ -107,8 +107,34 @@ const getUserProfile = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc    Update user role
+// @route   PATCH /api/users/role
+// @access  Private
+const updateUserRole = asyncHandler(async (req, res) => {
+  console.log('Updating role for user:', req.user._id);
+  console.log('New role:', req.body.role);
+
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  user.role = req.body.role;
+  await user.save();
+
+  res.json({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    token: generateToken(user._id)
+  });
+});
+
 module.exports = {
   registerUser,
   loginUser,
   getUserProfile,
+  updateUserRole,
 };
