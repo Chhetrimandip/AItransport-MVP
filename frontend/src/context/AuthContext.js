@@ -11,38 +11,9 @@ export const AuthProvider = ({ children }) => {
   });
   const toast = useToast();
 
-  const login = async (email, password) => {
-    try {
-      const { data } = await api.post('/users/login', { 
-        email, 
-        password 
-      });
-      
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data));
-        setUser(data);
-        
-        toast({
-          title: 'Login successful',
-          status: 'success',
-          duration: 3000,
-        });
-        
-        return data;
-      }
-    } catch (error) {
-      console.error('Login error:', error.response?.data);
-      
-      toast({
-        title: 'Login failed',
-        description: error.response?.data?.message || 'Invalid credentials',
-        status: 'error',
-        duration: 3000,
-      });
-      
-      throw error;
-    }
+  const login = (userData) => {
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
   };
 
   const logout = () => {

@@ -5,67 +5,17 @@ import {
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody,
   ModalCloseButton, useDisclosure, FormControl, FormLabel,
   Input, Select, NumberInput, NumberInputField, useToast,
-  Spinner, Badge
+  Spinner, Badge, Flex, Center
 } from '@chakra-ui/react';
 import { FaUser, FaCar, FaHistory, FaStar, FaPlus } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
+import AddVehicleModal from '../components/vehicles/AddVehicleModal';
+import VehicleCard from '../components/vehicles/VehicleCard';
+import RoleSwitcher from '../components/common/RoleSwitcher';
 
 const VehicleRegistrationModal = ({ isOpen, onClose, onSuccess }) => {
   // ... (previous modal code remains the same)
-};
-
-const RoleSwitcher = () => {
-  const { user } = useAuth();
-  const toast = useToast();
-  const [isDriver, setIsDriver] = useState(user?.role === 'driver');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleRoleSwitch = async () => {
-    setIsLoading(true);
-    try {
-      const newRole = isDriver ? 'user' : 'driver';
-      console.log('Attempting role switch to:', newRole);
-
-      const { data } = await api.patch('/users/role', { 
-        role: newRole 
-      });
-
-      console.log('Role switch response:', data);
-
-      // Update local storage
-      localStorage.setItem('user', JSON.stringify(data));
-      
-      setIsDriver(!isDriver);
-      toast({
-        title: `Switched to ${newRole} mode`,
-        status: 'success',
-        duration: 3000,
-      });
-    } catch (error) {
-      console.error('Role switch error:', error);
-      toast({
-        title: 'Failed to switch role',
-        description: error.response?.data?.message || 'Please try again',
-        status: 'error',
-        duration: 3000,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <Button
-      leftIcon={isDriver ? <FaCar /> : <FaUser />}
-      onClick={handleRoleSwitch}
-      colorScheme={isDriver ? 'green' : 'blue'}
-      size="md"
-      isLoading={isLoading}
-    >
-      {isDriver ? 'Switch to Passenger Mode' : 'Switch to Driver Mode'}
-    </Button>
-  );
 };
 
 const Profile = () => {
@@ -76,23 +26,29 @@ const Profile = () => {
   const toast = useToast();
   const bgColor = useColorModeValue('white', 'gray.700');
 
-  const stats = [
+  const driverStats = [
+    { label: 'Total Trips', value: '24', icon: FaHistory },
+    { label: 'Active Vehicles', value: vehicles.length, icon: FaCar },
+    { label: 'Rating', value: '4.8', icon: FaStar },
+  ];
+
+  const passengerStats = [
     { label: 'Total Trips', value: '24', icon: FaHistory },
     { label: 'Favorite Routes', value: '3', icon: FaStar },
-    { label: 'Vehicles Saved', value: '2', icon: FaCar },
+    { label: 'Saved Places', value: '5', icon: FaCar },
   ];
 
   useEffect(() => {
-    fetchVehicles();
-  }, []);
+    if (user?.role === 'driver') {
+      fetchVehicles();
+    }
+  }, [user?.role]);
 
   const fetchVehicles = async () => {
     try {
-      console.log('Token:', localStorage.getItem('token'));
       const { data } = await api.get('/vehicles');
       setVehicles(data);
     } catch (error) {
-      console.error('Fetch vehicles error:', error.response?.data);
       toast({
         title: 'Error fetching vehicles',
         description: error.response?.data?.message || 'Failed to fetch vehicles',
@@ -104,68 +60,95 @@ const Profile = () => {
     }
   };
 
-  const updateVehicleStatus = async (vehicleId, newStatus) => {
-    try {
-      await api.patch(`/vehicles/${vehicleId}/status`, { status: newStatus });
-      fetchVehicles();
-      toast({
-        title: 'Vehicle status updated',
-        status: 'success',
-        duration: 3000,
-      });
-    } catch (error) {
-      toast({
-        title: 'Failed to update status',
-        description: error.response?.data?.message || 'Update failed',
-        status: 'error',
-        duration: 3000,
-      });
-    }
-  };
-
   return (
-    <Box p={{ base: 4, md: 8 }}>
+    <Box p={4}>
       <Container maxW="container.xl">
+        {/* Profile Header */}
         <VStack spacing={6} align="stretch">
-          {/* Profile Header */}
           <Card>
             <CardBody>
               <VStack spacing={4} align="center">
-                <Avatar size={{ base: "xl", md: "2xl" }} name={user?.name} src={user?.avatar} />
+                <Avatar 
+                  size="2xl" 
+                  name={user?.name} 
+                />
                 <VStack spacing={1}>
-                  <Heading size={{ base: "md", md: "lg" }}>{user?.name}</Heading>
+                  <Heading size="lg">{user?.name}</Heading>
                   <Text color="gray.500">{user?.email}</Text>
+                  <Badge colorScheme={user?.role === 'driver' ? 'green' : 'blue'}>
+                    {user?.role === 'driver' ? 'Driver' : 'Passenger'}
+                  </Badge>
+                  <RoleSwitcher />
                 </VStack>
-                <RoleSwitcher />
-                <Button 
-                  leftIcon={<FaUser />} 
-                  colorScheme="blue"
-                  width={{ base: "100%", md: "auto" }}
-                >
-                  Edit Profile
-                </Button>
               </VStack>
             </CardBody>
           </Card>
 
-          {/* Stats */}
-          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
-            {stats.map((stat) => (
-              <Card key={stat.label}>
+          {/* Stats Section */}
+          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
+            {(user?.role === 'driver' ? driverStats : passengerStats).map((stat, index) => (
+              <Card key={index}>
                 <CardBody>
-                  <HStack spacing={4}>
+                  <VStack>
                     <Icon as={stat.icon} boxSize={6} color="blue.500" />
-                    <VStack align="start" spacing={0}>
-                      <Text fontSize={{ base: "xl", md: "2xl" }} fontWeight="bold">
-                        {stat.value}
-                      </Text>
-                      <Text color="gray.500">{stat.label}</Text>
-                    </VStack>
-                  </HStack>
+                    <Text fontWeight="bold">{stat.value}</Text>
+                    <Text fontSize="sm" color="gray.500">{stat.label}</Text>
+                  </VStack>
                 </CardBody>
               </Card>
             ))}
           </SimpleGrid>
+
+          {/* Vehicles Section (Only for drivers) */}
+          {user?.role === 'driver' && (
+            <>
+              <Flex justify="space-between" align="center" mb={4}>
+                <Heading size="md">My Vehicles</Heading>
+                <Button 
+                  leftIcon={<FaPlus />} 
+                  colorScheme="blue" 
+                  onClick={onOpen}
+                >
+                  Add Vehicle
+                </Button>
+              </Flex>
+
+              {/* Vehicle List */}
+              {isLoading ? (
+                <Center p={8}>
+                  <Spinner />
+                </Center>
+              ) : vehicles.length > 0 ? (
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+                  {vehicles.map((vehicle) => (
+                    <VehicleCard
+                      key={vehicle._id}
+                      vehicle={vehicle}
+                      onStatusUpdate={fetchVehicles}
+                    />
+                  ))}
+                </SimpleGrid>
+              ) : (
+                <Card>
+                  <CardBody>
+                    <VStack spacing={4}>
+                      <Text>No vehicles registered yet</Text>
+                      <Button colorScheme="blue" onClick={onOpen}>
+                        Register Your First Vehicle
+                      </Button>
+                    </VStack>
+                  </CardBody>
+                </Card>
+              )}
+
+              {/* Add Vehicle Modal */}
+              <AddVehicleModal 
+                isOpen={isOpen} 
+                onClose={onClose} 
+                onVehicleAdded={fetchVehicles} 
+              />
+            </>
+          )}
         </VStack>
       </Container>
     </Box>
