@@ -11,9 +11,16 @@ import {
   useToast,
   List,
   ListItem,
-  Text
+  Text,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
+  Badge,
+  Divider,
 } from '@chakra-ui/react';
-import { SearchIcon } from '@chakra-ui/icons';
+import { SearchIcon, TimeIcon, RepeatIcon, StarIcon } from '@chakra-ui/icons';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -55,6 +62,13 @@ const Map = ({ onLocationSelect }) => {
   const toast = useToast();
   const [routeCoordinates, setRouteCoordinates] = useState(null);
   const [routeInfo, setRouteInfo] = useState(null);
+  const [routesByMode, setRoutesByMode] = useState({
+    driving: null,
+    walking: null,
+    cycling: null,
+    bus: null
+  });
+  const [selectedMode, setSelectedMode] = useState('driving');
 
   // Get user's location on component mount
   useEffect(() => {
@@ -175,6 +189,29 @@ const Map = ({ onLocationSelect }) => {
     }
   }, [origin, destination]);
 
+  // Modify your calculateRoute function to handle multiple modes
+  const calculateRoute = async () => {
+    if (!origin || !destination) return;
+
+    try {
+      // Simulate different modes with different times/distances
+      const modes = {
+        driving: { distance: '5.2', duration: '15', coordinates: routeCoordinates },
+        walking: { distance: '5.0', duration: '60', coordinates: routeCoordinates },
+        cycling: { distance: '5.1', duration: '25', coordinates: routeCoordinates },
+        bus: { distance: '5.5', duration: '30', fare: '50', coordinates: routeCoordinates }
+      };
+
+      setRoutesByMode(modes);
+      setRouteInfo({
+        distance: modes[selectedMode].distance,
+        duration: modes[selectedMode].duration
+      });
+    } catch (error) {
+      console.error('Error calculating route:', error);
+    }
+  };
+
   return (
     <VStack spacing={4} width="100%">
       <VStack width="100%" spacing={3} position="relative">
@@ -234,6 +271,96 @@ const Map = ({ onLocationSelect }) => {
         )}
       </VStack>
 
+      {origin && destination && (
+        <Box p={4} bg="white" borderRadius="md" boxShadow="sm" width="100%">
+          <Tabs isFitted variant="enclosed">
+            <TabList>
+              <Tab>Driving</Tab>
+              <Tab>Walking</Tab>
+              <Tab>Cycling</Tab>
+              <Tab>Bus</Tab>
+            </TabList>
+
+            <TabPanels>
+              <TabPanel>
+                <VStack align="start" spacing={3}>
+                  <HStack justify="space-between" width="100%">
+                    <Text fontSize="lg" fontWeight="bold">Driving Route</Text>
+                    <Badge colorScheme="green">Recommended</Badge>
+                  </HStack>
+                  <Divider />
+                  <HStack spacing={6}>
+                    <VStack align="start">
+                      <Text color="gray.600"><TimeIcon mr={2} />Distance</Text>
+                      <Text fontWeight="bold">{routeInfo?.distance} km</Text>
+                    </VStack>
+                    <VStack align="start">
+                      <Text color="gray.600"><RepeatIcon mr={2} />Duration</Text>
+                      <Text fontWeight="bold">{routeInfo?.duration} mins</Text>
+                    </VStack>
+                  </HStack>
+                </VStack>
+              </TabPanel>
+
+              <TabPanel>
+                <VStack align="start" spacing={3}>
+                  <Text fontSize="lg" fontWeight="bold">Walking Route</Text>
+                  <Divider />
+                  <HStack spacing={6}>
+                    <VStack align="start">
+                      <Text color="gray.600"><TimeIcon mr={2} />Distance</Text>
+                      <Text fontWeight="bold">{routeInfo?.distance} km</Text>
+                    </VStack>
+                    <VStack align="start">
+                      <Text color="gray.600"><RepeatIcon mr={2} />Duration</Text>
+                      <Text fontWeight="bold">{Math.round(routeInfo?.duration * 4)} mins</Text>
+                    </VStack>
+                  </HStack>
+                </VStack>
+              </TabPanel>
+
+              <TabPanel>
+                <VStack align="start" spacing={3}>
+                  <Text fontSize="lg" fontWeight="bold">Cycling Route</Text>
+                  <Divider />
+                  <HStack spacing={6}>
+                    <VStack align="start">
+                      <Text color="gray.600"><TimeIcon mr={2} />Distance</Text>
+                      <Text fontWeight="bold">{routeInfo?.distance} km</Text>
+                    </VStack>
+                    <VStack align="start">
+                      <Text color="gray.600"><RepeatIcon mr={2} />Duration</Text>
+                      <Text fontWeight="bold">{Math.round(routeInfo?.duration * 2)} mins</Text>
+                    </VStack>
+                  </HStack>
+                </VStack>
+              </TabPanel>
+
+              <TabPanel>
+                <VStack align="start" spacing={3}>
+                  <Text fontSize="lg" fontWeight="bold">Bus Route</Text>
+                  <Divider />
+                  <HStack spacing={6}>
+                    <VStack align="start">
+                      <Text color="gray.600"><TimeIcon mr={2} />Distance</Text>
+                      <Text fontWeight="bold">{routeInfo?.distance} km</Text>
+                    </VStack>
+                    <VStack align="start">
+                      <Text color="gray.600"><RepeatIcon mr={2} />Duration</Text>
+                      <Text fontWeight="bold">{Math.round(routeInfo?.duration * 1.5)} mins</Text>
+                    </VStack>
+                    <VStack align="start">
+                      <Text color="gray.600"><StarIcon mr={2} />Fare</Text>
+                      <Text fontWeight="bold">Rs. 50</Text>
+                    </VStack>
+                  </HStack>
+                </VStack>
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
+        </Box>
+      )}
+
       <Box width="100%" height="400px" borderRadius="lg" overflow="hidden">
         <MapContainer
           center={[defaultCenter.lat, defaultCenter.lng]}
@@ -271,19 +398,71 @@ const Map = ({ onLocationSelect }) => {
       </Box>
 
       {/* Route Information Display */}
-      {routeInfo && (
-        <Box
-          p={4}
-          bg="white"
-          borderRadius="md"
-          boxShadow="sm"
-          width="100%"
-        >
-          <VStack align="start" spacing={2}>
-            <Text fontWeight="bold">Route Information:</Text>
-            <Text>Distance: {routeInfo.distance} km</Text>
-            <Text>Estimated Time: {routeInfo.duration} minutes</Text>
-          </VStack>
+      {Object.keys(routesByMode).length > 0 && routesByMode.driving && (
+        <Box p={4} bg="white" borderRadius="md" boxShadow="sm" width="100%">
+          <Tabs isFitted variant="enclosed">
+            <TabList>
+              {Object.keys(routesByMode).map((mode) => (
+                <Tab 
+                  key={mode}
+                  onClick={() => {
+                    setSelectedMode(mode);
+                    setRouteCoordinates(routesByMode[mode].coordinates);
+                  }}
+                >
+                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                </Tab>
+              ))}
+            </TabList>
+
+            <TabPanels>
+              {Object.entries(routesByMode).map(([mode, info]) => (
+                <TabPanel key={mode}>
+                  <VStack align="start" spacing={3}>
+                    <HStack justify="space-between" width="100%">
+                      <Text fontSize="lg" fontWeight="bold">
+                        {mode.charAt(0).toUpperCase() + mode.slice(1)} Route
+                      </Text>
+                      <Badge colorScheme="green">Recommended</Badge>
+                    </HStack>
+                    
+                    <Divider />
+                    
+                    <HStack spacing={6}>
+                      <VStack align="start">
+                        <Text color="gray.600">
+                          <TimeIcon mr={2} />Distance
+                        </Text>
+                        <Text fontWeight="bold">
+                          {info.distance} km
+                        </Text>
+                      </VStack>
+                      
+                      <VStack align="start">
+                        <Text color="gray.600">
+                          <RepeatIcon mr={2} />Duration
+                        </Text>
+                        <Text fontWeight="bold">
+                          {info.duration} mins
+                        </Text>
+                      </VStack>
+
+                      {mode === 'bus' && (
+                        <VStack align="start">
+                          <Text color="gray.600">
+                            <StarIcon mr={2} />Fare
+                          </Text>
+                          <Text fontWeight="bold">
+                            Rs. {info.fare}
+                          </Text>
+                        </VStack>
+                      )}
+                    </HStack>
+                  </VStack>
+                </TabPanel>
+              ))}
+            </TabPanels>
+          </Tabs>
         </Box>
       )}
 
