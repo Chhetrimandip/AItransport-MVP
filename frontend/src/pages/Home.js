@@ -104,8 +104,14 @@ const Home = () => {
     navigate('/login');
   };
 
-  const handleLocationSelect = (location) => {
-    console.log('Selected location:', location);
+  const handleLocationSelect = ({ origin, destination }) => {
+    if (origin && destination) {
+      console.log('Route selected:', {
+        from: origin,
+        to: destination
+      });
+      // Handle the route selection here
+    }
   };
 
   // Show loading state while checking authentication
@@ -216,9 +222,9 @@ const Home = () => {
             </Card>
           </SimpleGrid>
 
-          {/* Select Destination */}
+          {/* Select Route */}
           <Box>
-            <Heading size="md" mb={4}>Select Destination</Heading>
+            <Heading size="md" mb={4}>Select Route</Heading>
             <Map onLocationSelect={handleLocationSelect} />
           </Box>
 
