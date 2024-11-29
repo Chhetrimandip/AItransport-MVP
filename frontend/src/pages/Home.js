@@ -20,50 +20,24 @@ import {
   CardBody,
   CardHeader,
   Icon,
-  Spinner
+  Spinner,
+  Badge
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDownIcon, CalendarIcon, TimeIcon, StarIcon } from '@chakra-ui/icons';
 import Map from '../components/Map';
+import { useAuth } from '../context/AuthContext';
 
 const Home = () => {
-  const [user, setUser] = useState(null);
   const [recentRoutes, setRecentRoutes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+  const { user, logout } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is logged in
-    const token = localStorage.getItem('userToken');
-    const userDataString = localStorage.getItem('userData');
-
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-
-    try {
-      // Only parse userData if it exists
-      if (userDataString) {
-        const userData = JSON.parse(userDataString);
-        setUser(userData);
-      } else {
-        // If no user data, redirect to login
-        navigate('/login');
-        return;
-      }
-    } catch (error) {
-      console.error('Error parsing user data:', error);
-      // If there's an error parsing, clear storage and redirect
-      localStorage.clear();
-      navigate('/login');
-      return;
-    }
-
     fetchRecentRoutes();
-  }, [navigate]);
+  }, []);
 
   const fetchRecentRoutes = async () => {
     try {
@@ -100,7 +74,7 @@ const Home = () => {
   };
 
   const handleLogout = () => {
-    localStorage.clear(); // Clear all localStorage
+    logout();
     navigate('/login');
   };
 
@@ -131,60 +105,29 @@ const Home = () => {
 
   return (
     <Box minH="100vh" bg="gray.50">
-      {/* Header */}
-      <Box bg="white" boxShadow="sm" py={4}>
-        <Container maxW="container.xl">
-          <Flex justify="space-between" align="center">
-            <Heading size="lg">Transport AI</Heading>
-            
-            <Menu>
-              <MenuButton
-                as={Button}
-                rightIcon={<ChevronDownIcon />}
-                variant="ghost"
-              >
-                <HStack>
-                  <Avatar size="sm" name={user?.name} />
-                  <Text>{user?.name}</Text>
-                </HStack>
-              </MenuButton>
-              <MenuList>
-                <MenuItem>Profile</MenuItem>
-                <MenuItem>Settings</MenuItem>
-                <Divider />
-                <MenuItem onClick={handleLogout} color="red.500">
-                  Logout
-                </MenuItem>
-              </MenuList>
-            </Menu>
-          </Flex>
-        </Container>
-      </Box>
-
-      {/* Main Content */}
-      <Container maxW="container.xl" py={8}>
-        <VStack spacing={8} align="stretch">
+      <Container maxW="container.xl" py={2} px={3}>
+        <VStack spacing={4} align="stretch">
           {/* Welcome Section */}
-          <Box>
-            <Heading size="md" mb={2}>
+          <Box py={2}>
+            <Heading size="md" mb={1}>
               Welcome back, {user?.name}!
             </Heading>
-            <Text color="gray.600">
+            <Text fontSize="sm" color="gray.600">
               Find and book your next journey with ease.
             </Text>
           </Box>
 
           {/* Quick Actions */}
-          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
-            <Card>
-              <CardBody>
-                <VStack align="start" spacing={4}>
-                  <Icon as={CalendarIcon} boxSize={6} color="blue.500" />
+          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={3}>
+            <Card variant="outline">
+              <CardBody p={4}>
+                <VStack align="start" spacing={2}>
+                  <Icon as={CalendarIcon} boxSize={5} color="blue.500" />
                   <Heading size="sm">Book a Route</Heading>
-                  <Text fontSize="sm" color="gray.600">
+                  <Text fontSize="xs" color="gray.600">
                     Search and book available transport routes
                   </Text>
-                  <Button colorScheme="blue" size="sm">
+                  <Button colorScheme="blue" size="sm" width="100%">
                     Book Now
                   </Button>
                 </VStack>
@@ -222,37 +165,35 @@ const Home = () => {
             </Card>
           </SimpleGrid>
 
-          {/* Select Route */}
+          {/* Map Section */}
           <Box>
-            <Heading size="md" mb={4}>Select Route</Heading>
+            <Heading size="md" mb={2}>Select Route</Heading>
             <Map onLocationSelect={handleLocationSelect} />
           </Box>
 
           {/* Recent Routes */}
           <Box>
-            <Heading size="md" mb={4}>Recent Routes</Heading>
-            {isLoading ? (
-              <Text>Loading...</Text>
-            ) : recentRoutes.length > 0 ? (
-              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-                {recentRoutes.map((route) => (
-                  <Card key={route._id}>
-                    <CardHeader>
-                      <Heading size="sm">{route.startLocation} → {route.endLocation}</Heading>
-                    </CardHeader>
-                    <CardBody>
-                      <VStack align="start" spacing={2}>
-                        <Text fontSize="sm">Date: {new Date(route.schedule.departureTime).toLocaleDateString()}</Text>
-                        <Text fontSize="sm">Time: {new Date(route.schedule.departureTime).toLocaleTimeString()}</Text>
-                        <Text fontSize="sm">Status: {route.status}</Text>
-                      </VStack>
-                    </CardBody>
-                  </Card>
-                ))}
-              </SimpleGrid>
-            ) : (
-              <Text>No recent routes found</Text>
-            )}
+            <Heading size="md" mb={2}>Recent Routes</Heading>
+            <VStack spacing={3}>
+              {recentRoutes.map((route) => (
+                <Card key={route._id} width="100%" variant="outline">
+                  <CardBody p={3}>
+                    <VStack align="start" spacing={1}>
+                      <Text fontWeight="bold" fontSize="sm">
+                        {route.startLocation} → {route.endLocation}
+                      </Text>
+                      <Text fontSize="xs" color="gray.600">
+                        {new Date(route.schedule.departureTime).toLocaleDateString()}
+                      </Text>
+                      <Text fontSize="xs" color="gray.600">
+                        {new Date(route.schedule.departureTime).toLocaleTimeString()}
+                      </Text>
+                      <Badge size="sm">{route.status}</Badge>
+                    </VStack>
+                  </CardBody>
+                </Card>
+              ))}
+            </VStack>
           </Box>
         </VStack>
       </Container>

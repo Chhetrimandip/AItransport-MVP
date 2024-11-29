@@ -361,7 +361,7 @@ const Map = ({ onLocationSelect }) => {
         </Box>
       )}
 
-      <Box width="100%" height="400px" borderRadius="lg" overflow="hidden">
+      <Box width="100%" height={{ base: "300px", md: "400px" }} borderRadius="lg" overflow="hidden">
         <MapContainer
           center={[defaultCenter.lat, defaultCenter.lng]}
           zoom={13}

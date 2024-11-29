@@ -10,41 +10,25 @@ import {
   FormErrorMessage,
   useToast,
   Text,
-  Link as ChakraLink
 } from '@chakra-ui/react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
-  const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  
-  const toast = useToast();
   const navigate = useNavigate();
-
-  const validateForm = () => {
-    const newErrors = {};
-    if (!formData.email) newErrors.email = 'Email is required';
-    if (!formData.password) newErrors.password = 'Password is required';
-    return newErrors;
-  };
+  const toast = useToast();
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const validationErrors = validateForm();
-    
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-
     setIsLoading(true);
-    try {
-      console.log('Sending login request with:', formData);
 
+    try {
       const response = await fetch('http://localhost:5000/api/users/login', {
         method: 'POST',
         headers: {
@@ -54,102 +38,82 @@ const Login = () => {
       });
 
       const data = await response.json();
-      console.log('Server response:', data);
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
-
-      localStorage.setItem('userToken', data.token);
-      localStorage.setItem('userData', JSON.stringify({
-        name: data.name,
-        email: data.email,
-        id: data._id
-      }));
-
-      toast({
-        title: 'Login successful',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-
-      navigate('/home');
-    } catch (error) {
-      console.error('Login error:', error);
-      toast({
-        title: 'Login failed',
-        description: error.message,
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
       
-      localStorage.removeItem('userToken');
-      localStorage.removeItem('userData');
+      if (response.ok) {
+        login(data.user, data.token);
+        toast({
+          title: 'Success',
+          description: 'Login successful!',
+          status: 'success',
+          duration: 3000,
+        });
+        navigate('/home');
+      } else {
+        toast({
+          title: 'Error',
+          description: data.message || 'Login failed',
+          status: 'error',
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      console.log('Login error:', error);
+      toast({
+        title: 'Error',
+        description: 'Unable to connect to server',
+        status: 'error',
+        duration: 3000,
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
 
   return (
-    <Container maxW="md" py={8}>
-      <VStack spacing={6} as="form" onSubmit={handleSubmit}>
+    <Container maxW="container.sm" py={10}>
+      <VStack spacing={8}>
         <Heading>Login</Heading>
+        <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+          <VStack spacing={4} align="stretch">
+            <FormControl>
+              <FormLabel>Email</FormLabel>
+              <Input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
+            </FormControl>
 
-        <FormControl isInvalid={errors.email}>
-          <FormLabel>Email</FormLabel>
-          <Input
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="Enter your email"
-          />
-          <FormErrorMessage>{errors.email}</FormErrorMessage>
-        </FormControl>
+            <FormControl>
+              <FormLabel>Password</FormLabel>
+              <Input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+            </FormControl>
 
-        <FormControl isInvalid={errors.password}>
-          <FormLabel>Password</FormLabel>
-          <Input
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            placeholder="Enter your password"
-          />
-          <FormErrorMessage>{errors.password}</FormErrorMessage>
-        </FormControl>
-
-        <Button
-          colorScheme="blue"
-          width="full"
-          type="submit"
-          isLoading={isLoading}
-        >
-          Login
-        </Button>
-
-        <Text>
-          Don't have an account?{' '}
-          <ChakraLink as={RouterLink} to="/register" color="blue.500">
-            Register here
-          </ChakraLink>
-        </Text>
+            <Button
+              type="submit"
+              colorScheme="blue"
+              width="100%"
+              isLoading={isLoading}
+            >
+              Login
+            </Button>
+          </VStack>
+        </form>
       </VStack>
     </Container>
   );
