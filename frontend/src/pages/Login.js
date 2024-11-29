@@ -27,43 +27,12 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-
+    
     try {
-      const response = await fetch('http://localhost:5000/api/users/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-      
-      if (response.ok) {
-        login(data.user, data.token);
-        toast({
-          title: 'Success',
-          description: 'Login successful!',
-          status: 'success',
-          duration: 3000,
-        });
-        navigate('/home');
-      } else {
-        toast({
-          title: 'Error',
-          description: data.message || 'Login failed',
-          status: 'error',
-          duration: 3000,
-        });
-      }
+      await login(formData.email, formData.password);
+      navigate('/profile');
     } catch (error) {
-      console.log('Login error:', error);
-      toast({
-        title: 'Error',
-        description: 'Unable to connect to server',
-        status: 'error',
-        duration: 3000,
-      });
+      console.error('Login submission error:', error);
     } finally {
       setIsLoading(false);
     }

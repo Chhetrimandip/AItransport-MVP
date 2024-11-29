@@ -1,42 +1,71 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
+import api from '../utils/api';
+import { useToast } from '@chakra-ui/react';
 
-const AuthContext = createContext(null);
+const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  const toast = useToast();
 
-  useEffect(() => {
-    const token = localStorage.getItem('userToken');
-    const userData = localStorage.getItem('userData');
-    
-    if (token && userData) {
-      try {
-        setUser(JSON.parse(userData));
-      } catch (error) {
-        localStorage.clear();
+  const login = async (email, password) => {
+    try {
+      const { data } = await api.post('/users/login', { 
+        email, 
+        password 
+      });
+      
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data));
+        setUser(data);
+        
+        toast({
+          title: 'Login successful',
+          status: 'success',
+          duration: 3000,
+        });
+        
+        return data;
       }
+    } catch (error) {
+      console.error('Login error:', error.response?.data);
+      
+      toast({
+        title: 'Login failed',
+        description: error.response?.data?.message || 'Invalid credentials',
+        status: 'error',
+        duration: 3000,
+      });
+      
+      throw error;
     }
-    setLoading(false);
-  }, []);
-
-  const login = (userData, token) => {
-    localStorage.setItem('userToken', token);
-    localStorage.setItem('userData', JSON.stringify(userData));
-    setUser(userData);
   };
 
   const logout = () => {
-    localStorage.clear();
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
+    
+    toast({
+      title: 'Logged out successfully',
+      status: 'info',
+      duration: 3000,
+    });
   };
 
-  if (loading) {
-    return null; // or a loading spinner
-  }
+  const value = {
+    user,
+    login,
+    logout,
+    isAuthenticated: !!user
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

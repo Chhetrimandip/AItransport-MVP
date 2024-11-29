@@ -4,10 +4,7 @@ import {
   Button, 
   Heading, 
   IconButton, 
-  Menu, 
-  MenuButton, 
-  MenuList, 
-  MenuItem,
+  useColorMode,
   useDisclosure,
   Drawer,
   DrawerBody,
@@ -20,42 +17,82 @@ import {
 } from '@chakra-ui/react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { HamburgerIcon } from '@chakra-ui/icons';
+import { HamburgerIcon, MoonIcon, SunIcon } from '@chakra-ui/icons';
 
 const Header = () => {
   const { user, logout } = useAuth();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { colorMode, toggleColorMode } = useColorMode();
   const isMobile = useBreakpointValue({ base: true, md: false });
 
   const NavItems = () => (
     <>
       {user ? (
         <>
-          <Button as={Link} to="/home" colorScheme="whiteAlpha">
+          <Button 
+            as={Link} 
+            to="/home" 
+            variant={isMobile ? "solid" : "ghost"}
+            colorScheme={isMobile ? "blue" : "whiteAlpha"}
+          >
             Home
           </Button>
-          <Button as={Link} to="/profile" colorScheme="whiteAlpha">
+          <Button 
+            as={Link} 
+            to="/profile" 
+            variant={isMobile ? "solid" : "ghost"}
+            colorScheme={isMobile ? "blue" : "whiteAlpha"}
+          >
             Profile
           </Button>
-          <Button colorScheme="whiteAlpha" onClick={logout}>
+          <Button 
+            onClick={logout}
+            variant={isMobile ? "solid" : "ghost"}
+            colorScheme={isMobile ? "red" : "whiteAlpha"}
+          >
             Logout
           </Button>
         </>
       ) : (
         <>
-          <Button as={Link} to="/login" colorScheme="whiteAlpha">
+          <Button 
+            as={Link} 
+            to="/login" 
+            variant={isMobile ? "solid" : "ghost"}
+            colorScheme={isMobile ? "blue" : "whiteAlpha"}
+          >
             Login
           </Button>
-          <Button as={Link} to="/register" colorScheme="whiteAlpha" variant="outline">
+          <Button 
+            as={Link} 
+            to="/register" 
+            variant={isMobile ? "solid" : "ghost"}
+            colorScheme={isMobile ? "blue" : "whiteAlpha"}
+          >
             Register
           </Button>
         </>
       )}
+      <IconButton
+        icon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
+        onClick={toggleColorMode}
+        variant={isMobile ? "solid" : "ghost"}
+        colorScheme={isMobile ? "purple" : "whiteAlpha"}
+        aria-label="Toggle color mode"
+      />
     </>
   );
 
   return (
-    <Box bg="blue.500" px={2} py={2} position="sticky" top="0" zIndex="sticky">
+    <Box 
+      bg={colorMode === 'light' ? 'blue.500' : 'gray.800'} 
+      px={4} 
+      py={3} 
+      position="sticky" 
+      top="0" 
+      zIndex="sticky"
+      boxShadow="sm"
+    >
       <Flex maxW="container.xl" mx="auto" justify="space-between" align="center">
         <Link to="/">
           <Heading size="md" color="white">Transport AI</Heading>
@@ -68,7 +105,8 @@ const Header = () => {
               onClick={onOpen}
               variant="ghost"
               color="white"
-              size="sm"
+              _hover={{ bg: 'whiteAlpha.200' }}
+              size="md"
               aria-label="Open menu"
             />
             <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="full">
@@ -85,7 +123,7 @@ const Header = () => {
             </Drawer>
           </>
         ) : (
-          <Flex gap={4}>
+          <Flex gap={4} align="center">
             <NavItems />
           </Flex>
         )}

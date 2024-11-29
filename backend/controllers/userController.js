@@ -52,52 +52,41 @@ const registerUser = asyncHandler(async (req, res) => {
 // @desc    Login user
 // @route   POST /api/users/login
 // @access  Public
-const loginUser = async (req, res) => {
+const loginUser = asyncHandler(async (req, res) => {
   try {
     const { email, password } = req.body;
+    
+    // Add debug logging
+    console.log('Login attempt for:', email);
 
-    // Validate input
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Please provide email and password' });
-    }
-
-    // Find user
     const user = await User.findOne({ email });
     
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      res.status(401);
+      throw new Error('Invalid email or password');
     }
 
-    // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await user.matchPassword(password);
     
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      res.status(401);
+      throw new Error('Invalid email or password');
     }
 
-    // Create token
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '30d' }
-    );
-
-    // Send response
+    // If login successful, send response with token
     res.json({
-      token,
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      token: generateToken(user._id),
     });
-
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(401);
+    throw new Error(error.message || 'Invalid credentials');
   }
-};
+});
 
 // @desc    Get user profile
 // @route   GET /api/users/profile

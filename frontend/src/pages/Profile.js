@@ -1,24 +1,26 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Box,
-  VStack,
-  Heading,
-  Text,
-  Avatar,
-  Card,
-  CardBody,
-  SimpleGrid,
-  Button,
-  useColorModeValue,
-  HStack,
-  Icon,
-  Container,
+  Box, Container, VStack, Heading, Text, Avatar, Card, CardBody,
+  SimpleGrid, Button, useColorModeValue, HStack, Icon,
+  Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody,
+  ModalCloseButton, useDisclosure, FormControl, FormLabel,
+  Input, Select, NumberInput, NumberInputField, useToast,
+  Spinner, Badge
 } from '@chakra-ui/react';
-import { FaUser, FaCar, FaHistory, FaStar } from 'react-icons/fa';
+import { FaUser, FaCar, FaHistory, FaStar, FaPlus } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
+
+const VehicleRegistrationModal = ({ isOpen, onClose, onSuccess }) => {
+  // ... (previous modal code remains the same)
+};
 
 const Profile = () => {
   const { user } = useAuth();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [vehicles, setVehicles] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const toast = useToast();
   const bgColor = useColorModeValue('white', 'gray.700');
 
   const stats = [
@@ -26,6 +28,47 @@ const Profile = () => {
     { label: 'Favorite Routes', value: '3', icon: FaStar },
     { label: 'Vehicles Saved', value: '2', icon: FaCar },
   ];
+
+  useEffect(() => {
+    fetchVehicles();
+  }, []);
+
+  const fetchVehicles = async () => {
+    try {
+      console.log('Token:', localStorage.getItem('token'));
+      const { data } = await api.get('/vehicles');
+      setVehicles(data);
+    } catch (error) {
+      console.error('Fetch vehicles error:', error.response?.data);
+      toast({
+        title: 'Error fetching vehicles',
+        description: error.response?.data?.message || 'Failed to fetch vehicles',
+        status: 'error',
+        duration: 3000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateVehicleStatus = async (vehicleId, newStatus) => {
+    try {
+      await api.patch(`/vehicles/${vehicleId}/status`, { status: newStatus });
+      fetchVehicles();
+      toast({
+        title: 'Vehicle status updated',
+        status: 'success',
+        duration: 3000,
+      });
+    } catch (error) {
+      toast({
+        title: 'Failed to update status',
+        description: error.response?.data?.message || 'Update failed',
+        status: 'error',
+        duration: 3000,
+      });
+    }
+  };
 
   return (
     <Box p={{ base: 4, md: 8 }}>

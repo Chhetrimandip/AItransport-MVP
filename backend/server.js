@@ -3,6 +3,7 @@ const cors = require('cors');
 const connectDB = require('./config/db');
 const userRoutes = require('./routes/userRoutes');
 const routeRoutes = require('./routes/routeRoutes');
+const vehicleRoutes = require('./routes/vehicleRoutes');
 require('dotenv').config();
 
 const app = express();
@@ -17,6 +18,7 @@ app.use(express.json());
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/routes', routeRoutes);
+app.use('/api/vehicles', vehicleRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

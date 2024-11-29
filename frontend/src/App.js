@@ -7,6 +7,7 @@ import Profile from './pages/Profile';
 import Header from './components/layout/Header';
 import theme from './theme';
 import { useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 
 const ProtectedRoute = ({ children }) => {
   const { user } = useAuth();
@@ -15,7 +16,7 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   return (
-    <>
+    <AuthProvider>
       <ColorModeScript initialColorMode={theme.config.initialColorMode} />
       <Router>
         <Box display="flex" flexDirection="column" minHeight="100vh">
@@ -39,7 +40,7 @@ function App() {
           </Box>
         </Box>
       </Router>
-    </>
+    </AuthProvider>
   );
 }
 
