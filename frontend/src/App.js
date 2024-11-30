@@ -8,6 +8,7 @@ import Header from './components/layout/Header';
 import theme from './theme';
 import { useAuth } from './context/AuthContext';
 import { AuthProvider } from './context/AuthContext';
+import Register from './pages/Register';
 
 const ProtectedRoute = ({ children }) => {
   const { user } = useAuth();
@@ -24,6 +25,7 @@ function App() {
           <Box flex="1">
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
               <Route path="/" element={<Navigate to="/home" replace />} />
               <Route path="/home" element={
                 <ProtectedRoute>

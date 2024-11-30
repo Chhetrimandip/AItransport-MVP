@@ -12,30 +12,24 @@ const routeSchema = new mongoose.Schema({
     required: true
   },
   startLocation: {
-    type: {
-      coordinates: {
-        type: [Number],
-        required: true
-      },
-      address: {
-        type: String,
-        required: true
-      }
+    coordinates: {
+      type: [Number],
+      required: true
     },
-    required: true
+    address: {
+      type: String,
+      required: true
+    }
   },
   endLocation: {
-    type: {
-      coordinates: {
-        type: [Number],
-        required: true
-      },
-      address: {
-        type: String,
-        required: true
-      }
+    coordinates: {
+      type: [Number],
+      required: true
     },
-    required: true
+    address: {
+      type: String,
+      required: true
+    }
   },
   departureTime: {
     type: Date,
@@ -59,5 +53,8 @@ const routeSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+routeSchema.index({ 'startLocation.coordinates': '2dsphere' });
+routeSchema.index({ 'endLocation.coordinates': '2dsphere' });
 
 module.exports = mongoose.model('Route', routeSchema);

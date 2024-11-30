@@ -52,7 +52,7 @@ function MapController({ origin, destination }) {
   return null;
 }
 
-const Map = ({ onLocationSelect }) => {
+const Map = ({ onLocationSelect, availableRoutes }) => {
   const [origin, setOrigin] = useState(null);
   const [destination, setDestination] = useState(null);
   const [originSearch, setOriginSearch] = useState('');
@@ -209,6 +209,32 @@ const Map = ({ onLocationSelect }) => {
       });
     } catch (error) {
       console.error('Error calculating route:', error);
+    }
+  };
+
+  const handleBooking = (route) => {
+    if (!route) return;
+
+    // You can add additional validation here
+    try {
+      // For now, just show a success message
+      toast({
+        title: 'Booking Initiated',
+        description: `Booking initiated for vehicle ${route.vehicle.vehicleNumber}`,
+        status: 'success',
+        duration: 3000,
+      });
+      
+      // Later we'll implement actual booking logic
+      // You might want to navigate to a booking confirmation page
+      // or open a modal with booking details
+    } catch (error) {
+      toast({
+        title: 'Booking Error',
+        description: error.message || 'Failed to initiate booking',
+        status: 'error',
+        duration: 3000,
+      });
     }
   };
 

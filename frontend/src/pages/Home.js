@@ -111,17 +111,30 @@ const Home = () => {
 
   const searchAvailableRoutes = async (origin, destination) => {
     try {
-      const { data } = await api.post('/routes/search', {
+      console.log('Searching routes with:', { origin, destination });
+  
+      // Create a default departure time (next hour)
+      const defaultTime = new Date();
+      defaultTime.setHours(defaultTime.getHours() + 1);
+      defaultTime.setMinutes(0);
+  
+      const searchData = {
         startLocation: {
           coordinates: [origin.lng, origin.lat],
-          address: origin.address
+          address: origin.address || 'Default Address'
         },
         endLocation: {
           coordinates: [destination.lng, destination.lat],
-          address: destination.address
+          address: destination.address || 'Default Address'
         },
-        departureTime: selectedTime
-      });
+        departureTime: defaultTime.toISOString()
+      };
+  
+      console.log('Search request data:', searchData);
+  
+      const { data } = await api.post('/routes/search', searchData);
+      console.log('Search response:', data);
+  
 
       setAvailableRoutes(data);
       if (data.length > 0) {

@@ -13,6 +13,7 @@ import {
   Link as ChakraLink
 } from '@chakra-ui/react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import api from '../utils/api';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -43,33 +44,25 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('Registration started');
     const validationErrors = validateForm();
     
     if (Object.keys(validationErrors).length > 0) {
+      console.log('Validation errors:', validationErrors);
       setErrors(validationErrors);
       return;
     }
 
     setIsLoading(true);
     try {
-      // TODO: Replace with your API endpoint
-      const response = await fetch('http://localhost:5000/api/users/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password
-        }),
+      console.log('Sending registration request');
+      const response = await api.post('/users/register', {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
+      console.log('Registration response:', response.data);
 
       toast({
         title: 'Registration successful',
@@ -79,11 +72,13 @@ const Register = () => {
         isClosable: true,
       });
 
+      console.log('Navigating to login page');
       navigate('/login');
     } catch (error) {
+      console.error('Registration error:', error);
       toast({
         title: 'Registration failed',
-        description: error.message,
+        description: error.response?.data?.message || 'Registration failed',
         status: 'error',
         duration: 5000,
         isClosable: true,
