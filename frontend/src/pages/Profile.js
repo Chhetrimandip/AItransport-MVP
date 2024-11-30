@@ -12,7 +12,103 @@ import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 
 const VehicleRegistrationModal = ({ isOpen, onClose, onSuccess }) => {
-  // ... (previous modal code remains the same)
+  const [formData, setFormData] = useState({
+    type: '',
+    vehicleNumber: '',
+    capacity: '',
+    description: ''
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const toast = useToast();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await api.post('/vehicles', formData);
+      toast({
+        title: 'Vehicle Added',
+        description: 'Your vehicle has been registered successfully',
+        status: 'success',
+        duration: 3000,
+      });
+      onSuccess(response.data);
+      onClose();
+    } catch (error) {
+      toast({
+        title: 'Registration Failed',
+        description: error.response?.data?.message || 'Failed to register vehicle',
+        status: 'error',
+        duration: 3000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose}>
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Register New Vehicle</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          <VStack as="form" spacing={4} onSubmit={handleSubmit}>
+            <FormControl isRequired>
+              <FormLabel>Vehicle Type</FormLabel>
+              <Select
+                placeholder="Select type"
+                value={formData.type}
+                onChange={(e) => setFormData({...formData, type: e.target.value})}
+              >
+                <option value="bus">Bus</option>
+                <option value="train">Train</option>
+                <option value="taxi">Taxi</option>
+              </Select>
+            </FormControl>
+
+            <FormControl isRequired>
+              <FormLabel>Vehicle Number</FormLabel>
+              <Input
+                placeholder="Enter vehicle number"
+                value={formData.vehicleNumber}
+                onChange={(e) => setFormData({...formData, vehicleNumber: e.target.value})}
+              />
+            </FormControl>
+
+            <FormControl isRequired>
+              <FormLabel>Seating Capacity</FormLabel>
+              <NumberInput min={1} max={50}>
+                <NumberInputField
+                  value={formData.capacity}
+                  onChange={(e) => setFormData({...formData, capacity: e.target.value})}
+                />
+              </NumberInput>
+            </FormControl>
+
+            <FormControl>
+              <FormLabel>Description</FormLabel>
+              <Input
+                placeholder="Enter vehicle description"
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+              />
+            </FormControl>
+
+            <Button
+              type="submit"
+              colorScheme="blue"
+              width="100%"
+              isLoading={isLoading}
+            >
+              Register Vehicle
+            </Button>
+          </VStack>
+        </ModalBody>
+      </ModalContent>
+    </Modal>
+  );
 };
 
 const RoleSwitcher = () => {
@@ -176,8 +272,25 @@ const Profile = () => {
               </Card>
             ))}
           </SimpleGrid>
+
+          <Button
+            leftIcon={<FaPlus />}
+            colorScheme="blue"
+            onClick={onOpen}
+            mb={4}
+          >
+            Add Vehicle
+          </Button>
         </VStack>
       </Container>
+
+      <VehicleRegistrationModal
+        isOpen={isOpen}
+        onClose={onClose}
+        onSuccess={(newVehicle) => {
+          setVehicles([...vehicles, newVehicle]);
+        }}
+      />
     </Box>
   );
 };

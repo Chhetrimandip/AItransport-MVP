@@ -4,7 +4,7 @@ import {
   Box, Button, Text, VStack, HStack, Badge, Input, 
   InputGroup, InputLeftElement, List, ListItem,
   Tabs, TabList, Tab, TabPanels, TabPanel, Divider,
-  useToast
+  useToast, Spinner
 } from '@chakra-ui/react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
 import { SearchIcon, TimeIcon, RepeatIcon } from '@chakra-ui/icons';
@@ -63,6 +63,7 @@ const LiveMap = ({ userLocation, onVehicleSelect }) => {
   const [availableVehicles, setAvailableVehicles] = useState([]);
   const [availableRoutes, setAvailableRoutes] = useState([]);
   const [selectedRoute, setSelectedRoute] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
   const toast = useToast();
@@ -325,11 +326,17 @@ const LiveMap = ({ userLocation, onVehicleSelect }) => {
     }
   };
 
-  // Add this function to fetch available routes when a route is selected
+  // Fetch available routes when origin/destination changes
   const fetchAvailableRoutes = async () => {
     if (!origin || !destination) return;
     
+    setIsLoading(true);
     try {
+      console.log('Searching for routes with:', {
+        start: origin,
+        end: destination
+      });
+
       const response = await api.post('/routes/search', {
         startLocation: {
           coordinates: [origin.lng, origin.lat],
@@ -341,7 +348,25 @@ const LiveMap = ({ userLocation, onVehicleSelect }) => {
         }
       });
 
+      console.log('Found routes:', response.data);
       setAvailableRoutes(response.data);
+
+      // Show toast if routes are found
+      if (response.data.length > 0) {
+        toast({
+          title: 'Routes Found',
+          description: `Found ${response.data.length} available vehicle(s) nearby`,
+          status: 'success',
+          duration: 3000,
+        });
+      } else {
+        toast({
+          title: 'No Routes',
+          description: 'No vehicles available on this route currently',
+          status: 'info',
+          duration: 3000,
+        });
+      }
     } catch (error) {
       console.error('Error fetching routes:', error);
       toast({
@@ -350,6 +375,8 @@ const LiveMap = ({ userLocation, onVehicleSelect }) => {
         status: 'error',
         duration: 3000,
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -427,9 +454,19 @@ const LiveMap = ({ userLocation, onVehicleSelect }) => {
       {renderRouteInfo()}
 
       {/* Map Container */}
-      <Box h="500px" w="100%" position="relative">
+      <Box width="100%" height="500px" position="relative">
+        {isLoading && (
+          <Spinner 
+            position="absolute" 
+            top="50%" 
+            left="50%" 
+            zIndex={1000} 
+            size="xl" 
+          />
+        )}
+        
         <MapContainer
-          center={userLocation ? [userLocation.latitude, userLocation.longitude] : [27.7172, 85.3240]}
+          center={userLocation || [27.7172, 85.3240]} // Default to Kathmandu
           zoom={13}
           style={{ height: '100%', width: '100%' }}
         >
@@ -437,149 +474,50 @@ const LiveMap = ({ userLocation, onVehicleSelect }) => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           />
-          
-          {userLocation && <MapCenter center={{ lat: userLocation.latitude, lng: userLocation.longitude }} />}
 
-          {/* Route Polyline */}
-          {routeCoordinates && (
-            <Polyline
-              positions={routeCoordinates}
-              color="blue"
-              weight={4}
-              opacity={0.6}
-            />
-          )}
-
-          {/* Start Location Marker */}
+          {/* User's selected points */}
           {origin && (
             <Marker 
               position={[origin.lat, origin.lng]}
-              icon={startIcon}
+              icon={createIcon('green')}
             >
-              <Popup>
-                <Text fontWeight="bold">Start Location</Text>
-                <Text fontSize="sm">{originSearch}</Text>
-              </Popup>
+              <Popup>Start Point</Popup>
             </Marker>
           )}
-          
-          {/* End Location Marker */}
+
           {destination && (
             <Marker 
               position={[destination.lat, destination.lng]}
-              icon={endIcon}
+              icon={createIcon('red')}
             >
-              <Popup>
-                <Text fontWeight="bold">Destination</Text>
-                <Text fontSize="sm">{destinationSearch}</Text>
-              </Popup>
+              <Popup>Destination</Popup>
             </Marker>
           )}
 
-          {/* Active Routes Markers */}
-          {activeRoutes.map(route => (
-            route.currentLocation && (
-              <Marker
-                key={route._id}
-                position={[
-                  route.currentLocation.latitude,
-                  route.currentLocation.longitude
-                ]}
-                icon={getVehicleIcon(route.vehicle.type)}
-                eventHandlers={{
-                  click: () => setSelectedVehicle(route)
-                }}
-              >
-                <Popup>
-                  <VStack spacing={2} align="start">
-                    <Text fontWeight="bold">{route.vehicle.vehicleNumber}</Text>
-                    <HStack>
-                      <Badge colorScheme="green">
-                        {route.availableSeats} seats available
-                      </Badge>
-                      <Badge colorScheme="blue">
-                        {route.vehicle.type}
-                      </Badge>
-                    </HStack>
-                    <Button
-                      size="sm"
-                      colorScheme="blue"
-                      onClick={() => onVehicleSelect(route)}
-                    >
-                      Book Now
-                    </Button>
-                  </VStack>
-                </Popup>
-              </Marker>
-            )
-          ))}
-
-          {/* Available Vehicles Markers */}
-          {availableVehicles.map((vehicle) => (
-            <Marker
-              key={vehicle._id}
-              position={[vehicle.currentLocation.latitude, vehicle.currentLocation.longitude]}
-              icon={getVehicleIcon(vehicle.type)}
-            >
-              <Popup>
-                <VStack spacing={2} align="start" p={1}>
-                  <HStack justify="space-between" width="100%">
-                    <Text fontWeight="bold">{vehicle.vehicleNumber}</Text>
-                    <Badge colorScheme={vehicle.type === 'Bus' ? 'green' : 'blue'}>
-                      {vehicle.type}
-                    </Badge>
-                  </HStack>
-                  <Divider />
-                  <Text fontSize="sm">
-                    Available Seats: {vehicle.availableSeats}
-                  </Text>
-                  <Text fontSize="sm">
-                    Fare: Rs. {vehicle.fare}
-                  </Text>
-                  <Text fontSize="sm">
-                    Departure: {new Date(vehicle.departureTime).toLocaleTimeString()}
-                  </Text>
-                  <Button
-                    size="sm"
-                    colorScheme="blue"
-                    width="100%"
-                    onClick={() => handleBooking(vehicle)}
-                  >
-                    Book Now
-                  </Button>
-                </VStack>
-              </Popup>
-            </Marker>
-          ))}
-
-          {/* Available Routes Markers */}
+          {/* Available vehicles */}
           {availableRoutes.map((route) => (
             <Marker
               key={route._id}
               position={[
-                route.currentLocation?.coordinates[1] || route.startLocation.coordinates[1],
-                route.currentLocation?.coordinates[0] || route.startLocation.coordinates[0]
+                route.startLocation.coordinates[1],
+                route.startLocation.coordinates[0]
               ]}
-              icon={getVehicleIcon(route.vehicle?.type || 'bus')}
+              icon={createIcon('blue')}
             >
               <Popup>
-                <VStack spacing={2} align="start">
-                  <HStack justify="space-between" width="100%">
-                    <Text fontWeight="bold">{route.vehicle?.vehicleNumber || 'Vehicle'}</Text>
-                    <Badge colorScheme={route.vehicle?.type === 'Bus' ? 'green' : 'blue'}>
-                      {route.vehicle?.type || 'Bus'}
-                    </Badge>
-                  </HStack>
-                  <Divider />
-                  <Text fontSize="sm">Driver: {route.driver?.name || 'Not assigned'}</Text>
-                  <Text fontSize="sm">Available Seats: {route.availableSeats}</Text>
-                  <Text fontSize="sm">Fare: Rs. {route.fare}</Text>
-                  <Text fontSize="sm">
-                    Departure: {new Date(route.departureTime).toLocaleTimeString()}
+                <VStack spacing={2} align="start" p={2}>
+                  <Text fontWeight="bold">
+                    Vehicle: {route.vehicle?.vehicleNumber}
+                  </Text>
+                  <Text>Driver: {route.driver?.name}</Text>
+                  <Text>Available Seats: {route.availableSeats}</Text>
+                  <Text>Fare: Rs. {route.fare}</Text>
+                  <Text>
+                    Distance: {Math.round(route.distanceToStart)} meters away
                   </Text>
                   <Button
-                    size="sm"
                     colorScheme="blue"
+                    size="sm"
                     width="100%"
                     onClick={() => onVehicleSelect(route)}
                   >
@@ -589,46 +527,31 @@ const LiveMap = ({ userLocation, onVehicleSelect }) => {
               </Popup>
             </Marker>
           ))}
+
+          {/* Route line if available */}
+          {routeCoordinates && (
+            <Polyline
+              positions={routeCoordinates}
+              color="blue"
+              weight={3}
+              opacity={0.7}
+            />
+          )}
         </MapContainer>
       </Box>
     </VStack>
   );
 };
 
-// Helper function for vehicle icons (if not already defined)
-const getVehicleIcon = (type) => {
-  const getIconColor = () => {
-    switch (type.toLowerCase()) {
-      case 'bus': return '#22C55E';
-      case 'taxi': return '#EAB308';
-      case 'train': return '#3B82F6';
-      default: return '#6B7280';
-    }
-  };
-
-  const getIconComponent = () => {
-    switch (type.toLowerCase()) {
-      case 'bus': return FaBus;
-      case 'taxi': return FaTaxi;
-      case 'train': return FaTrain;
-      default: return FaMapMarkerAlt;
-    }
-  };
-
-  return L.divIcon({
-    className: 'custom-icon',
-    html: ReactDOMServer.renderToString(
-      <div style={{ 
-        color: getIconColor(), 
-        fontSize: '24px',
-        filter: 'drop-shadow(2px 2px 2px rgba(0,0,0,0.5))'
-      }}>
-        {React.createElement(getIconComponent())}
-      </div>
-    ),
-    iconSize: [24, 24],
-    iconAnchor: [12, 24],
-    popupAnchor: [0, -24]
+// Helper function to create custom markers
+const createIcon = (color) => {
+  return new L.Icon({
+    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    shadowSize: [41, 41],
   });
 };
 
