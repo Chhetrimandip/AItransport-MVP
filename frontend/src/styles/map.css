@@ -1,0 +1,39 @@
+.custom-icon {
+  background: none;
+  border: none;
+}
+
+.vehicle-marker {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+}
+
+.bus {
+  background-color: #4299E1;
+}
+
+.taxi {
+  background-color: #F6E05E;
+}
+
+.train {
+  background-color: #48BB78;
+}
+
+.user-marker {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: #E53E3E;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+} 
