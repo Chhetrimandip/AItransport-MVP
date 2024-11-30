@@ -13,6 +13,8 @@ import api from '../utils/api';
 import AddVehicleModal from '../components/vehicles/AddVehicleModal';
 import VehicleCard from '../components/vehicles/VehicleCard';
 import RoleSwitcher from '../components/common/RoleSwitcher';
+import AddRouteModal from '../components/routes/AddRouteModal';
+import RouteCard from '../components/routes/RouteCard';
 
 const VehicleRegistrationModal = ({ isOpen, onClose, onSuccess }) => {
   // ... (previous modal code remains the same)
@@ -25,6 +27,8 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const toast = useToast();
   const bgColor = useColorModeValue('white', 'gray.700');
+  const [routes, setRoutes] = useState([]);
+  const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
 
   const driverStats = [
     { label: 'Total Trips', value: '24', icon: FaHistory },
@@ -41,6 +45,7 @@ const Profile = () => {
   useEffect(() => {
     if (user?.role === 'driver') {
       fetchVehicles();
+      fetchRoutes();
     }
   }, [user?.role]);
 
@@ -59,6 +64,70 @@ const Profile = () => {
       setIsLoading(false);
     }
   };
+
+  const fetchRoutes = async () => {
+    try {
+      const { data } = await api.get('/routes');
+      console.log('Fetched routes:', data);
+      setRoutes(data);
+    } catch (error) {
+      console.error('Error fetching routes:', error);
+      toast({
+        title: 'Error fetching routes',
+        description: error.response?.data?.message || 'Failed to fetch routes',
+        status: 'error',
+        duration: 3000,
+      });
+    }
+  };
+
+  const renderRoutesSection = () => (
+    <>
+      <Flex justify="space-between" align="center" mb={4}>
+        <Heading size="md">My Routes</Heading>
+        <Button
+          leftIcon={<FaPlus />}
+          colorScheme="blue"
+          onClick={() => setIsRouteModalOpen(true)}
+        >
+          Create Route
+        </Button>
+      </Flex>
+
+      {routes.length > 0 ? (
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+          {routes.map((route) => (
+            <RouteCard
+              key={route._id}
+              route={route}
+              onStatusUpdate={fetchRoutes}
+            />
+          ))}
+        </SimpleGrid>
+      ) : (
+        <Card>
+          <CardBody>
+            <VStack spacing={4}>
+              <Text>No routes created yet</Text>
+              <Button
+                colorScheme="blue"
+                onClick={() => setIsRouteModalOpen(true)}
+              >
+                Create Your First Route
+              </Button>
+            </VStack>
+          </CardBody>
+        </Card>
+      )}
+
+      <AddRouteModal
+        isOpen={isRouteModalOpen}
+        onClose={() => setIsRouteModalOpen(false)}
+        onRouteAdded={fetchRoutes}
+        vehicles={vehicles}
+      />
+    </>
+  );
 
   return (
     <Box p={4}>
@@ -147,6 +216,8 @@ const Profile = () => {
                 onClose={onClose} 
                 onVehicleAdded={fetchVehicles} 
               />
+
+              {renderRoutesSection()}
             </>
           )}
         </VStack>

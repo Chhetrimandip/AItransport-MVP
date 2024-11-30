@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes as RouterRoutes, Route, Navigate } from 'react-router-dom';
 import { ColorModeScript, Box } from '@chakra-ui/react';
 import Login from './pages/Login';
 import Home from './pages/Home';
@@ -8,6 +8,7 @@ import Header from './components/layout/Header';
 import theme from './theme';
 import { useAuth } from './context/AuthContext';
 import { AuthProvider } from './context/AuthContext';
+import RoutesPage from './pages/RoutesPage';
 
 const ProtectedRoute = ({ children }) => {
   const { user } = useAuth();
@@ -22,7 +23,7 @@ function App() {
         <Box display="flex" flexDirection="column" minHeight="100vh">
           <Header />
           <Box flex="1">
-            <Routes>
+            <RouterRoutes>
               <Route path="/login" element={<Login />} />
               <Route path="/" element={<Navigate to="/home" replace />} />
               <Route path="/home" element={
@@ -35,8 +36,9 @@ function App() {
                   <Profile />
                 </ProtectedRoute>
               } />
+              <Route path="/routes" element={<RoutesPage />} />
               <Route path="*" element={<Navigate to="/login" replace />} />
-            </Routes>
+            </RouterRoutes>
           </Box>
         </Box>
       </Router>

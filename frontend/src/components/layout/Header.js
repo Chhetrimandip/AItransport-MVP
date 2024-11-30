@@ -15,7 +15,7 @@ import {
   VStack,
   useBreakpointValue
 } from '@chakra-ui/react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { HamburgerIcon, MoonIcon, SunIcon } from '@chakra-ui/icons';
 
@@ -24,6 +24,7 @@ const Header = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { colorMode, toggleColorMode } = useColorMode();
   const isMobile = useBreakpointValue({ base: true, md: false });
+  const navigate = useNavigate();
 
   const NavItems = () => (
     <>
@@ -52,6 +53,7 @@ const Header = () => {
           >
             Logout
           </Button>
+          <Button onClick={() => navigate('/routes')}>Find Routes</Button>
         </>
       ) : (
         <>
@@ -71,6 +73,7 @@ const Header = () => {
           >
             Register
           </Button>
+          <Button onClick={() => navigate('/routes')}>Find Routes</Button>
         </>
       )}
       <IconButton
