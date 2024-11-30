@@ -52,7 +52,7 @@ function MapController({ origin, destination }) {
   return null;
 }
 
-const Map = ({ onLocationSelect, availableRoutes }) => {
+const Map = ({ onLocationSelect, availableRoutes, showRoutes }) => {
   const [origin, setOrigin] = useState(null);
   const [destination, setDestination] = useState(null);
   const [originSearch, setOriginSearch] = useState('');
@@ -237,6 +237,45 @@ const Map = ({ onLocationSelect, availableRoutes }) => {
       });
     }
   };
+
+  // Add useEffect to display routes when they're available
+  useEffect(() => {
+    if (showRoutes && availableRoutes?.length > 0) {
+      // Clear existing route layers
+      Map.current.getSource('route')?.clear();
+      
+      // Add new routes to the map
+      availableRoutes.forEach((route, index) => {
+        if (route.startLocation?.coordinates && route.endLocation?.coordinates) {
+          const routeCoordinates = [
+            route.startLocation.coordinates,
+            route.endLocation.coordinates
+          ];
+          
+          // Add route line to map
+          Map.current.addLayer({
+            id: `route-${index}`,
+            type: 'line',
+            source: {
+              type: 'geojson',
+              data: {
+                type: 'Feature',
+                properties: {},
+                geometry: {
+                  type: 'LineString',
+                  coordinates: routeCoordinates
+                }
+              }
+            },
+            paint: {
+              'line-color': '#3182ce',
+              'line-width': 3
+            }
+          });
+        }
+      });
+    }
+  }, [availableRoutes, showRoutes]);
 
   return (
     <VStack spacing={4} width="100%">

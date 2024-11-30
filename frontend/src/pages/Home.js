@@ -132,8 +132,8 @@ const Home = () => {
   
       console.log('Search request data:', searchData);
   
-      const { data } = await api.post('/routes/search', searchData);
-      console.log('Search response:', data);
+const { data } = await api.post('/routes/search', searchData);
+    console.log('Search response:', data);
   
 
       setAvailableRoutes(data);
