@@ -16,7 +16,7 @@ const VehicleRegistrationModal = ({ isOpen, onClose, onSuccess }) => {
 };
 
 const RoleSwitcher = () => {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const toast = useToast();
   const [isDriver, setIsDriver] = useState(user?.role === 'driver');
   const [isLoading, setIsLoading] = useState(false);
@@ -35,6 +35,16 @@ const RoleSwitcher = () => {
 
       // Update local storage
       localStorage.setItem('user', JSON.stringify(data));
+      
+      // Update the auth context
+      const updatedUser = {
+        ...user,
+        role: newRole
+      };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      // Force a refresh of the auth context
+      window.location.reload();
       
       setIsDriver(!isDriver);
       toast({

@@ -87,9 +87,41 @@ const getRecentRoutes = asyncHandler(async (req, res) => {
   res.json(routes);
 });
 
+// Add to your existing route search endpoint
+const searchRoutes = async (req, res) => {
+  try {
+    const { boardingTime } = req.query;
+    
+    // Convert boardingTime string to Date object for comparison
+    const requestedTime = new Date(`1970-01-01T${boardingTime}`);
+    
+    // Find routes that match the requested time (within a 30-minute window)
+    const routes = await Route.find({
+      status: 'active',
+      departureTime: {
+        $gte: new Date(requestedTime.getTime() - 30 * 60000), // 30 minutes before
+        $lte: new Date(requestedTime.getTime() + 30 * 60000)  // 30 minutes after
+      }
+    }).populate('driver', 'name vehicleType');
+
+    res.json({
+      success: true,
+      routes
+    });
+  } catch (error) {
+    console.error('Error searching routes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error searching routes',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   createRoute,
   getNearbyRoutes,
   updateRouteStatus,
-  getRecentRoutes
+  getRecentRoutes,
+  searchRoutes
 };

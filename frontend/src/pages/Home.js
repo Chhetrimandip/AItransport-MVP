@@ -21,12 +21,17 @@ import {
   CardHeader,
   Icon,
   Spinner,
-  Badge
+  Badge,
+  FormControl,
+  FormLabel,
+  Input
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDownIcon, CalendarIcon, TimeIcon, StarIcon } from '@chakra-ui/icons';
 import Map from '../components/Map';
 import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
+import { API_URL } from '../config';
 
 const Home = () => {
   const [recentRoutes, setRecentRoutes] = useState([]);
@@ -34,6 +39,7 @@ const Home = () => {
   const { user, logout } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
+  const [selectedTime, setSelectedTime] = useState('');
 
   useEffect(() => {
     fetchRecentRoutes();
@@ -86,6 +92,47 @@ const Home = () => {
       });
       // Handle the route selection here
     }
+  };
+
+  const handleRouteSearch = async () => {
+    try {
+      setIsLoading(true);
+      const response = await axios.get(`${API_URL}/api/routes/search`, {
+        params: {
+          boardingTime: selectedTime
+        },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (response.data.success) {
+        setRecentRoutes(response.data.routes);
+        toast({
+          title: "Routes found",
+          description: "Available routes matching your criteria",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    } catch (error) {
+      console.error('Error searching routes:', error);
+      toast({
+        title: "Error",
+        description: "Failed to search routes. Please try again.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTimeSubmit = (e) => {
+    e.preventDefault();
+    handleRouteSearch();
   };
 
   // Show loading state while checking authentication
@@ -171,6 +218,40 @@ const Home = () => {
             <Map onLocationSelect={handleLocationSelect} />
           </Box>
 
+          {/* Time Selection Form */}
+          {user?.role === 'user' && (
+            <Box 
+              p={4} 
+              bg="white" 
+              borderRadius="lg" 
+              shadow="sm" 
+              width="100%"
+              mt={4}
+            >
+              <form onSubmit={handleTimeSubmit}>
+                <FormControl>
+                  <FormLabel>Preferred Boarding Time</FormLabel>
+                  <HStack spacing={4}>
+                    <Input
+                      type="time"
+                      value={selectedTime}
+                      onChange={(e) => setSelectedTime(e.target.value)}
+                      required
+                      width="auto"
+                    />
+                    <Button 
+                      type="submit" 
+                      colorScheme="blue"
+                      leftIcon={<TimeIcon />}
+                    >
+                      Set Time
+                    </Button>
+                  </HStack>
+                </FormControl>
+              </form>
+            </Box>
+          )}
+
           {/* Recent Routes */}
           <Box>
             <Heading size="md" mb={2}>Recent Routes</Heading>
@@ -201,4 +282,4 @@ const Home = () => {
   );
 };
 
-export default Home; 
+export default Home;
