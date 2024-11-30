@@ -2,6 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const routeRoutes = require('./routes/routeRoutes');
 
 dotenv.config();
 connectDB();
@@ -39,7 +40,7 @@ app.get('/api/routes', (req, res) => {
 
 // Routes
 app.use('/api/users', require('./routes/userRoutes'));
-app.use('/api/routes', require('./routes/routeRoutes'));
+app.use('/api/routes', routeRoutes);
 app.use('/api/bookings', require('./routes/bookingRoutes'));
 app.use('/api/vehicles', require('./routes/vehicleRoutes'));
 
