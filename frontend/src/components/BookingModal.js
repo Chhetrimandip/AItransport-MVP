@@ -30,9 +30,18 @@ const BookingModal = ({ isOpen, onClose, route, onBookingSubmit }) => {
     onBookingSubmit({
       ...bookingData,
       routeId: route._id,
-      pickupLocation: route.startLocation,
-      dropoffLocation: route.endLocation,
-      totalFare: route.fare * bookingData.numberOfSeats
+      pickupLocation: {
+        type: 'Point',
+        coordinates: route.startLocation.coordinates,
+        address: route.startLocation.address
+      },
+      dropoffLocation: {
+        type: 'Point',
+        coordinates: route.endLocation.coordinates,
+        address: route.endLocation.address
+      },
+      totalFare: route.fare * bookingData.numberOfSeats,
+      estimatedPickupTime: route.departureTime
     });
   };
 
