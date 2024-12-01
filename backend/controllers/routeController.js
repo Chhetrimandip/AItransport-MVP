@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const Route = require('../models/routeModel');
+const Booking = require('../models/bookingModel');
 
 // @desc    Create new route
 // @route   POST /api/routes
@@ -132,8 +133,58 @@ function calculateDistance(coords1, coords2) {
   return R * c; // Distance in meters
 }
 
+// @desc    Get bookings for a specific route
+// @route   GET /api/routes/:id/bookings
+// @access  Private
+const getRouteBookings = asyncHandler(async (req, res) => {
+  const route = await Route.findById(req.params.id);
+  
+  if (!route) {
+    res.status(404);
+    throw new Error('Route not found');
+  }
+
+  // Verify user is the driver of this route
+  if (route.driver.toString() !== req.user._id.toString()) {
+    res.status(403);
+    throw new Error('Not authorized to view these bookings');
+  }
+
+  const bookings = await Booking.find({ route: req.params.id })
+    .populate('user', 'name phone')
+    .sort('-createdAt');
+
+  res.json(bookings);
+});
+
+// @desc    Update route status
+// @route   PATCH /api/routes/:id/status
+// @access  Private (Driver only)
+const updateRouteStatus = asyncHandler(async (req, res) => {
+  const { status } = req.body;
+  const route = await Route.findById(req.params.id);
+
+  if (!route) {
+    res.status(404);
+    throw new Error('Route not found');
+  }
+
+  // Verify user is the driver
+  if (route.driver.toString() !== req.user._id.toString()) {
+    res.status(403);
+    throw new Error('Not authorized to update this route');
+  }
+
+  route.status = status;
+  await route.save();
+
+  res.json(route);
+});
+
 module.exports = {
   createRoute,
   getRecentRoutes,
-  searchRoutes
+  searchRoutes,
+  getRouteBookings,
+  updateRouteStatus
 };

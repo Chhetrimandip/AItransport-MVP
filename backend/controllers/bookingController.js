@@ -8,6 +8,7 @@ const Route = require('../models/routeModel');
 const createBooking = asyncHandler(async (req, res) => {
   const {
     routeId,
+    numberOfSeats,
     pickupLocation,
     dropoffLocation,
     numberOfSeats,
@@ -29,6 +30,7 @@ const createBooking = asyncHandler(async (req, res) => {
   // Calculate total fare
   const totalFare = route.fare * numberOfSeats;
 
+  // Create booking
   const booking = await Booking.create({
     user: req.user._id,
     route: routeId,
@@ -36,15 +38,17 @@ const createBooking = asyncHandler(async (req, res) => {
     dropoffLocation,
     numberOfSeats,
     totalFare,
-    estimatedPickupTime
+    status: 'pending',
+    estimatedPickupTime: route.departureTime
   });
 
   // Update available seats
   route.availableSeats -= numberOfSeats;
   await route.save();
 
+  // Populate booking with route and user details
   await booking.populate('route');
-  await booking.populate('user', 'name email');
+  await booking.populate('user', 'name email phone');
 
   res.status(201).json(booking);
 });

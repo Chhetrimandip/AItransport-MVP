@@ -33,6 +33,8 @@ import { FaCar, FaRoute, FaHistory } from 'react-icons/fa';
 import Map from '../components/Map';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
+import BookingModal from '../components/BookingModal';
+import RouteBookings from '../components/RouteBookings';
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -64,6 +66,9 @@ const Home = () => {
   // User-specific state
   const [selectedTime, setSelectedTime] = useState('');
   const [availableRoutes, setAvailableRoutes] = useState([]);
+  const [selectedRoute, setSelectedRoute] = useState(null);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [isRouteBookingsModalOpen, setIsRouteBookingsModalOpen] = useState(false);
 
 
 
@@ -323,25 +328,23 @@ const { data } = await api.post('/routes/search', searchData);
     }
   };
 
-  const handleBooking = async (route) => {
-    if (!route) return;
+  const handleBooking = (route) => {
+    setSelectedRoute(route);
+    setIsBookingModalOpen(true);
+  };
 
+  const handleBookingSubmit = async (bookingData) => {
     try {
-      const response = await api.post('/bookings', {
-        routeId: route._id,
-        numberOfSeats: 1, // Default to 1 seat for now
-        pickupLocation: route.startLocation,
-        dropoffLocation: route.endLocation
-      });
+      const response = await api.post('/bookings', bookingData);
 
       toast({
         title: 'Booking Successful',
-        description: `Your ride has been booked with ${route.vehicle?.vehicleNumber}`,
+        description: `Your ride has been booked with ${selectedRoute.vehicle?.vehicleNumber}`,
         status: 'success',
         duration: 3000,
       });
 
-      // Refresh available routes
+      setIsBookingModalOpen(false);
       searchAvailableRoutes(selectedLocations.start, selectedLocations.end);
     } catch (error) {
       console.error('Booking error:', error);
@@ -683,6 +686,18 @@ const { data } = await api.post('/routes/search', searchData);
       <Container maxW="container.xl" py={2} px={3}>
         {user?.role === 'driver' ? renderDriverContent() : renderUserContent()}
       </Container>
+      <BookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        route={selectedRoute}
+        onBookingSubmit={handleBookingSubmit}
+      />
+
+      <RouteBookings
+        isOpen={isRouteBookingsModalOpen}
+        onClose={() => setIsRouteBookingsModalOpen(false)}
+        route={selectedRoute}
+      />
     </Box>
   );
 };
