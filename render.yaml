@@ -4,9 +4,12 @@ services:
     env: node
     root: .
     buildCommand: |
+      npm install
       cd backend
       npm install
-    startCommand: npm start
+    startCommand: |
+      cd backend
+      node server.js
     envVars:
       - key: NODE_ENV
         value: production
