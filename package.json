@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "type": "commonjs",
   "scripts": {
+    "start": "cd backend && npm start",
     "backend-install": "cd backend && npm install",
     "backend-start": "cd backend && npm start",
     "frontend-install": "cd frontend && npm install",
