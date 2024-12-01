@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: all-in-one-transport-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://aitransport-mvp-backend.onrender.com

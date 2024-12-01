@@ -1,4 +1,17 @@
-services:
+  - type: web
+    name: transport-ai-backend
+    env: node
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && node server.js
+    envVars:
+      - key: MONGODB_URI
+        value: "your-mongodb-uri"
+      - key: JWT_SECRET
+        value: "your-jwt-secret"
+      - key: PORT
+        value: "5000"
+      - key: CORS_ORIGIN
+        value: "https://your-frontend-url.onrender.com"
   - type: web
     name: all-in-one-transport-backend
     env: node
@@ -12,4 +25,4 @@ services:
       - key: JWT_SECRET
         sync: false
       - key: PORT
-        value: 5000 
+        value: 5000
