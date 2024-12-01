@@ -1,3 +1,4 @@
+services:
   - type: web
     name: transport-ai-backend
     env: node
@@ -5,24 +6,19 @@
     startCommand: cd backend && node server.js
     envVars:
       - key: MONGODB_URI
-        value: "your-mongodb-uri"
+        sync: false
       - key: JWT_SECRET
-        value: "your-jwt-secret"
+        sync: false
       - key: PORT
         value: "5000"
       - key: CORS_ORIGIN
-        value: "https://your-frontend-url.onrender.com"
-  - type: web
-    name: all-in-one-transport-backend
-    env: node
-    buildCommand: cd backend && npm install
-    startCommand: cd backend && npm start
+        value: "https://transport-ai-frontend.onrender.com"
+
+  - type: static
+    name: transport-ai-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/build
     envVars:
-      - key: NODE_ENV
-        value: production
-      - key: MONGO_URI
-        sync: false
-      - key: JWT_SECRET
-        sync: false
-      - key: PORT
-        value: 5000
+      - key: REACT_APP_API_URL
+        value: "https://transport-ai-backend.onrender.com/api"
