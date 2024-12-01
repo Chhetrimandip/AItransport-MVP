@@ -57,6 +57,13 @@ const searchRoutes = asyncHandler(async (req, res) => {
     const { startLocation, endLocation } = req.body;
     const MAX_DISTANCE = 5000; // 5km in meters
 
+    console.log('Search request:', { startLocation, endLocation });
+
+    if (!startLocation?.coordinates || !endLocation?.coordinates) {
+      res.status(400);
+      throw new Error('Invalid location coordinates');
+    }
+
     // Find routes that are:
     // 1. Active
     // 2. Have available seats
@@ -76,6 +83,8 @@ const searchRoutes = asyncHandler(async (req, res) => {
     })
     .populate('driver', 'name phone')
     .populate('vehicle', 'vehicleNumber type');
+
+    console.log('Found routes:', routes.length);
 
     // Calculate route similarity and add address information
     const routesWithDetails = routes.map(route => {
@@ -101,7 +110,9 @@ const searchRoutes = asyncHandler(async (req, res) => {
     res.json(routesWithDetails);
   } catch (error) {
     console.error('Search routes error:', error);
-    res.status(500).json({ message: 'Error searching routes' });
+    res.status(error.status || 500).json({ 
+      message: error.message || 'Error searching routes'
+    });
   }
 });
 
@@ -280,7 +291,5 @@ module.exports = {
   getRecentRoutes,
   searchRoutes,
   getRouteBookings,
-  updateRouteStatus,
-  calculateDistance,
-  calculateDirectionSimilarity
+  updateRouteStatus
 };

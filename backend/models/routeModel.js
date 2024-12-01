@@ -12,24 +12,28 @@ const routeSchema = new mongoose.Schema({
     required: true
   },
   startLocation: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      required: true
+    },
     coordinates: {
       type: [Number],
       required: true
     },
-    address: {
-      type: String,
-      required: true
-    }
+    address: String
   },
   endLocation: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      required: true
+    },
     coordinates: {
       type: [Number],
       required: true
     },
-    address: {
-      type: String,
-      required: true
-    }
+    address: String
   },
   departureTime: {
     type: Date,

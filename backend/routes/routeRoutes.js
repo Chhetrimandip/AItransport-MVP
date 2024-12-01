@@ -17,7 +17,7 @@ router.use(protect);
 
 // Specific routes first
 router.get('/recent', getRecentRoutes);
-router.get('/search', searchRoutes);
+router.post('/search', searchRoutes);
 
 // Then parameter-based routes
 router.get('/:id/bookings', getRouteBookings);
