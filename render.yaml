@@ -2,8 +2,13 @@ services:
   - type: web
     name: transport-ai-backend
     env: node
-    buildCommand: npm run install-backend
-    startCommand: npm run start-backend
+    root: .
+    buildCommand: |
+      cd backend
+      npm install
+    startCommand: |
+      cd backend
+      npm start
     envVars:
       - key: NODE_ENV
         value: production
@@ -19,8 +24,12 @@ services:
   - type: static
     name: transport-ai-frontend
     env: static
-    buildCommand: npm run install-frontend && npm run build-frontend
-    staticPublishPath: frontend/build
+    root: .
+    buildCommand: |
+      cd frontend
+      npm install
+      npm run build
+    staticPublishPath: ./frontend/build
     envVars:
       - key: REACT_APP_API_URL
         value: "https://transport-ai-backend.onrender.com/api"
