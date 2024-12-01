@@ -34,6 +34,8 @@ import Map from '../components/Map';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 const Home = () => {
   const [recentRoutes, setRecentRoutes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,12 +44,17 @@ const Home = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   // Driver-specific state
+  const [originSearch, setOriginSearch] = useState('');
+  const [destinationSearch, setDestinationSearch] = useState('');
   const [vehicles, setVehicles] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [routeSchedule, setRouteSchedule] = useState({
     departureTime: '',
     availableSeats: 0,
-    fare: 0
+    fare: 0,
+    distance: '',
+    duration: '',
+    type: 'driving'
   });
   const [selectedLocations, setSelectedLocations] = useState({
     start: null,
@@ -57,6 +64,8 @@ const Home = () => {
   // User-specific state
   const [selectedTime, setSelectedTime] = useState('');
   const [availableRoutes, setAvailableRoutes] = useState([]);
+
+
 
   useEffect(() => {
     if (user?.role === 'driver') {
@@ -98,11 +107,52 @@ const Home = () => {
     }
   };
 
-  const handleLocationSelect = ({ origin, destination }) => {
-    setSelectedLocations({
-      start: origin,
-      end: destination
-    });
+  const handleLocationSelect = async ({ origin, destination }) => {
+    console.log('Received locations:', { origin, destination });
+
+    if (origin) {
+      try {
+        // Fetch address details using reverse geocoding
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${origin.lat}&lon=${origin.lng}`
+        );
+        const data = await response.json();
+        
+        setSelectedLocations(prev => ({
+          ...prev,
+          start: {
+            ...origin,
+            display_name: data.display_name,
+            address: data.display_name
+          }
+        }));
+        await delay(1000);
+      } catch (error) {
+        console.error('Error fetching start location details:', error);
+      }
+    }
+    
+    if (destination) {
+      try {
+        // Fetch address details using reverse geocoding
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${destination.lat}&lon=${destination.lng}`
+        );
+        const data = await response.json();
+        
+        setSelectedLocations(prev => ({
+          ...prev,
+          end: {
+            ...destination,
+            display_name: data.display_name,
+            address: data.display_name
+          }
+        }));
+        await delay(1000);
+      } catch (error) {
+        console.error('Error fetching end location details:', error);
+      }
+    }
 
     if (user?.role === 'user') {
       searchAvailableRoutes(origin, destination);
@@ -174,25 +224,63 @@ const { data } = await api.post('/routes/search', searchData);
       return;
     }
 
+    // Debug logs
+    console.log('Selected Locations:', {
+      start: selectedLocations.start,
+      end: selectedLocations.end
+    });
+
     try {
-      // Create a proper date object for departure time
       const today = new Date();
       const [hours, minutes] = routeSchedule.departureTime.split(':');
       const departureDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), parseInt(hours), parseInt(minutes));
-  
+
+      // Log the location data before validation
+      console.log('Start Location:', {
+        display_name: selectedLocations.start.display_name,
+        address: selectedLocations.start.address,
+        name: selectedLocations.start.name
+      });
+      console.log('End Location:', {
+        display_name: selectedLocations.end.display_name,
+        address: selectedLocations.end.address,
+        name: selectedLocations.end.name
+      });
+
+      // Try using name or formatted address if display_name is not available
+      const startAddress = selectedLocations.start.display_name || 
+                          selectedLocations.start.name || 
+                          selectedLocations.start.formatted_address || 
+                          selectedLocations.start.address;
+      
+      const endAddress = selectedLocations.end.display_name || 
+                        selectedLocations.end.name || 
+                        selectedLocations.end.formatted_address || 
+                        selectedLocations.end.address;
+
+      if (!startAddress || !endAddress) {
+        toast({
+          title: 'Missing Addresses',
+          description: 'Please select valid locations with addresses',
+          status: 'warning',
+          duration: 3000,
+        });
+        return;
+      }
+
       const response = await api.post('/routes', {
         startLocation: {
           type: 'Point',
           coordinates: [selectedLocations.start.lng, selectedLocations.start.lat],
-          address: selectedLocations.start.address || 'Default Address' // Make sure this exists
+          address: startAddress
         },
         endLocation: {
           type: 'Point',
           coordinates: [selectedLocations.end.lng, selectedLocations.end.lat],
-          address: selectedLocations.end.address || 'Default Address' // Make sure this exists
+          address: endAddress
         },
         vehicleId: selectedVehicle,
-        departureTime: departureDate.toISOString(), // Send as ISO string
+        departureTime: departureDate.toISOString(),
         availableSeats: parseInt(routeSchedule.availableSeats),
         fare: parseInt(routeSchedule.fare)
       });
@@ -204,7 +292,7 @@ const { data } = await api.post('/routes/search', searchData);
         duration: 3000,
       });
 
-      // Reset form
+      // Reset form and refresh routes
       setSelectedVehicle(null);
       setRouteSchedule({
         departureTime: '',
@@ -216,9 +304,9 @@ const { data } = await api.post('/routes/search', searchData);
         end: null
       });
 
-      // Refresh routes
       fetchRecentRoutes();
     } catch (error) {
+      console.error('Error creating route:', error);
       toast({
         title: 'Error',
         description: error.response?.data?.message || 'Failed to create route',
@@ -232,6 +320,37 @@ const { data } = await api.post('/routes/search', searchData);
     e.preventDefault();
     if (selectedLocations.start && selectedLocations.end) {
       searchAvailableRoutes(selectedLocations.start, selectedLocations.end);
+    }
+  };
+
+  const handleBooking = async (route) => {
+    if (!route) return;
+
+    try {
+      const response = await api.post('/bookings', {
+        routeId: route._id,
+        numberOfSeats: 1, // Default to 1 seat for now
+        pickupLocation: route.startLocation,
+        dropoffLocation: route.endLocation
+      });
+
+      toast({
+        title: 'Booking Successful',
+        description: `Your ride has been booked with ${route.vehicle?.vehicleNumber}`,
+        status: 'success',
+        duration: 3000,
+      });
+
+      // Refresh available routes
+      searchAvailableRoutes(selectedLocations.start, selectedLocations.end);
+    } catch (error) {
+      console.error('Booking error:', error);
+      toast({
+        title: 'Booking Failed',
+        description: error.response?.data?.message || 'Unable to complete booking',
+        status: 'error',
+        duration: 3000,
+      });
     }
   };
 
@@ -376,7 +495,7 @@ const { data } = await api.post('/routes/search', searchData);
               <CardBody>
                 <VStack align="start" spacing={2}>
                   <Heading size="sm">
-                    {route.startLocation.address} → {route.endLocation.address}
+                    {route.startLocation.address.split(',')[0]} → {route.endLocation.address.split(',')[0]}
                   </Heading>
                   <HStack>
                     <Icon as={TimeIcon} />
@@ -384,6 +503,9 @@ const { data } = await api.post('/routes/search', searchData);
                       {new Date(route.departureTime).toLocaleTimeString()}
                     </Text>
                   </HStack>
+                  <Text fontSize="sm" color="gray.600">
+                    Vehicle: {route.vehicle?.vehicleNumber || 'N/A'}
+                  </Text>
                   <Badge colorScheme="green">
                     {route.availableSeats} seats available
                   </Badge>
@@ -498,14 +620,14 @@ const { data } = await api.post('/routes/search', searchData);
       {/* Available Routes */}
       {availableRoutes.length > 0 && (
         <Box>
-          <Heading size="md" mb={4}>Available Routes</Heading>
+          <Heading size="md" mb={4}>Available Vehicles in the Route</Heading>
           <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
             {availableRoutes.map(route => (
               <Card key={route._id}>
                 <CardBody>
                   <VStack align="start" spacing={2}>
                     <Heading size="sm">
-                      {route.startLocation.address} → {route.endLocation.address}
+                      {route.startLocation.address?.split(',')[0] || 'Loading...'} → {route.endLocation.address?.split(',')[0] || 'Loading...'}
                     </Heading>
                     <HStack>
                       <Icon as={TimeIcon} />
@@ -513,11 +635,22 @@ const { data } = await api.post('/routes/search', searchData);
                         {new Date(route.departureTime).toLocaleTimeString()}
                       </Text>
                     </HStack>
+                    <Text fontSize="sm" color="gray.600">
+                      Vehicle: {route.vehicle?.vehicleNumber || 'N/A'}
+                    </Text>
+                    <Text fontSize="sm" color="gray.600">
+                      Driver: {route.driver?.name || 'N/A'}
+                    </Text>
                     <Badge colorScheme="green">
                       {route.availableSeats} seats available
                     </Badge>
                     <Text fontSize="sm">Fare: Rs {route.fare}</Text>
-                    <Button colorScheme="blue" size="sm" width="100%">
+                    <Button 
+                      colorScheme="blue" 
+                      size="sm" 
+                      width="100%"
+                      onClick={() => handleBooking(route)}
+                    >
                       Book Now
                     </Button>
                   </VStack>

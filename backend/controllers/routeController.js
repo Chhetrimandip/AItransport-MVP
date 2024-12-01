@@ -74,48 +74,33 @@ const searchRoutes = asyncHandler(async (req, res) => {
       }
     })
     .populate('driver', 'name phone')
-    .populate('vehicle', 'type vehicleNumber');
+    .populate('vehicle', 'vehicleNumber type');
 
-    // Calculate route similarity and distance for each route
-    const routesWithScores = routes.map(route => {
-      // Calculate distance from user to route's start point
+    // Calculate route similarity and add address information
+    const routesWithDetails = routes.map(route => {
       const distanceToStart = calculateDistance(
         startLocation.coordinates,
         route.startLocation.coordinates
       );
 
-      // Calculate route direction similarity (dot product of vectors)
-      const routeVector = [
-        route.endLocation.coordinates[0] - route.startLocation.coordinates[0],
-        route.endLocation.coordinates[1] - route.startLocation.coordinates[1]
-      ];
-      
-      const userVector = [
-        endLocation.coordinates[0] - startLocation.coordinates[0],
-        endLocation.coordinates[1] - startLocation.coordinates[1]
-      ];
-
-      const similarity = calculateDirectionSimilarity(routeVector, userVector);
-
       return {
         ...route.toObject(),
         distanceToStart,
-        routeSimilarity: similarity
+        startLocation: {
+          ...route.startLocation,
+          address: route.startLocation.address || startLocation.address
+        },
+        endLocation: {
+          ...route.endLocation,
+          address: route.endLocation.address || endLocation.address
+        }
       };
     });
 
-    // Filter routes based on direction similarity (at least 0.7 similarity)
-    const matchingRoutes = routesWithScores.filter(route => 
-      route.routeSimilarity > 0.7 && route.distanceToStart <= MAX_DISTANCE
-    );
-
-    res.json(matchingRoutes);
+    res.json(routesWithDetails);
   } catch (error) {
-    console.error('Search Routes Error:', error);
-    res.status(500).json({ 
-      message: 'Error searching routes', 
-      error: error.message 
-    });
+    console.error('Search routes error:', error);
+    res.status(500).json({ message: 'Error searching routes' });
   }
 });
 

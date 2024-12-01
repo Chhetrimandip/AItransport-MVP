@@ -3,17 +3,22 @@ const router = express.Router();
 const { protect } = require('../middleware/authMiddleware');
 const {
   createRoute,
-  getRecentRoutes,
-  searchRoutes
+  getRoutes,
+  searchRoutes,
+  getRouteById,
+  updateRoute,
+  deleteRoute
 } = require('../controllers/routeController');
 
-// Route creation endpoint
-router.post('/', protect, createRoute);
+// Public routes
+router.get('/search', searchRoutes);
+router.get('/:id', getRouteById);
 
-// Get recent routes
-router.get('/recent', protect, getRecentRoutes);
-
-// Search routes
-router.post('/search', protect, searchRoutes);
+// Protected routes
+router.use(protect);
+router.post('/', createRoute);
+router.get('/', getRoutes);
+router.put('/:id', updateRoute);
+router.delete('/:id', deleteRoute);
 
 module.exports = router;
