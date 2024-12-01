@@ -10,26 +10,44 @@ import {
   Text,
   Badge,
   Box,
+  Spinner,
+  Center,
+  useToast,
 } from '@chakra-ui/react';
 import api from '../utils/api';
 
 const RouteBookings = ({ isOpen, onClose, route }) => {
   const [bookings, setBookings] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     const fetchBookings = async () => {
+      if (!route?._id) return;
+      
+      setIsLoading(true);
       try {
+        console.log('Fetching bookings for route:', route._id);
         const response = await api.get(`/routes/${route._id}/bookings`);
+        console.log('Bookings response:', response.data);
         setBookings(response.data);
       } catch (error) {
-        console.error('Error fetching bookings:', error);
+        console.error('Error details:', error.response?.data);
+        toast({
+          title: 'Error fetching bookings',
+          description: error.response?.data?.message || 'Unable to fetch bookings',
+          status: 'error',
+          duration: 3000,
+        });
+      } finally {
+        setIsLoading(false);
       }
     };
 
     if (isOpen && route) {
       fetchBookings();
     }
-  }, [isOpen, route]);
+  }, [isOpen, route, toast]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>

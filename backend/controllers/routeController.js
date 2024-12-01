@@ -137,24 +137,43 @@ function calculateDistance(coords1, coords2) {
 // @route   GET /api/routes/:id/bookings
 // @access  Private
 const getRouteBookings = asyncHandler(async (req, res) => {
-  const route = await Route.findById(req.params.id);
-  
-  if (!route) {
-    res.status(404);
-    throw new Error('Route not found');
+  try {
+    console.log('Starting getRouteBookings...');
+    console.log('Request params:', req.params);
+    console.log('User ID:', req.user._id);
+    
+    const route = await Route.findById(req.params.id);
+    console.log('Found route:', route);
+    
+    if (!route) {
+      console.log('Route not found');
+      res.status(404);
+      throw new Error('Route not found');
+    }
+
+    // Verify user is the driver of this route
+    const isDriver = route.driver.toString() === req.user._id.toString();
+    console.log('Auth check:', { 
+      routeDriver: route.driver.toString(), 
+      requestUser: req.user._id.toString(),
+      isDriver 
+    });
+
+    if (!isDriver) {
+      res.status(403);
+      throw new Error('Not authorized to view these bookings');
+    }
+
+    const bookings = await Booking.find({ route: req.params.id })
+      .populate('user', 'name phone')
+      .sort('-createdAt');
+    
+    console.log('Found bookings:', bookings.length);
+    res.json(bookings);
+  } catch (error) {
+    console.error('Error in getRouteBookings:', error);
+    throw error;
   }
-
-  // Verify user is the driver of this route
-  if (route.driver.toString() !== req.user._id.toString()) {
-    res.status(403);
-    throw new Error('Not authorized to view these bookings');
-  }
-
-  const bookings = await Booking.find({ route: req.params.id })
-    .populate('user', 'name phone')
-    .sort('-createdAt');
-
-  res.json(bookings);
 });
 
 // @desc    Update route status
@@ -181,10 +200,87 @@ const updateRouteStatus = asyncHandler(async (req, res) => {
   res.json(route);
 });
 
+// @desc    Get all routes
+// @route   GET /api/routes
+// @access  Private
+const getRoutes = asyncHandler(async (req, res) => {
+  const routes = await Route.find()
+    .populate('driver', 'name phone')
+    .populate('vehicle', 'vehicleNumber type');
+  res.json(routes);
+});
+
+// @desc    Get route by ID
+// @route   GET /api/routes/:id
+// @access  Private
+const getRouteById = asyncHandler(async (req, res) => {
+  const route = await Route.findById(req.params.id)
+    .populate('driver', 'name phone')
+    .populate('vehicle', 'vehicleNumber type');
+  
+  if (!route) {
+    res.status(404);
+    throw new Error('Route not found');
+  }
+  
+  res.json(route);
+});
+
+// @desc    Update route
+// @route   PUT /api/routes/:id
+// @access  Private
+const updateRoute = asyncHandler(async (req, res) => {
+  const route = await Route.findById(req.params.id);
+  
+  if (!route) {
+    res.status(404);
+    throw new Error('Route not found');
+  }
+  
+  if (route.driver.toString() !== req.user._id.toString()) {
+    res.status(403);
+    throw new Error('Not authorized to update this route');
+  }
+  
+  const updatedRoute = await Route.findByIdAndUpdate(
+    req.params.id,
+    req.body,
+    { new: true }
+  );
+  
+  res.json(updatedRoute);
+});
+
+// @desc    Delete route
+// @route   DELETE /api/routes/:id
+// @access  Private
+const deleteRoute = asyncHandler(async (req, res) => {
+  const route = await Route.findById(req.params.id);
+  
+  if (!route) {
+    res.status(404);
+    throw new Error('Route not found');
+  }
+  
+  if (route.driver.toString() !== req.user._id.toString()) {
+    res.status(403);
+    throw new Error('Not authorized to delete this route');
+  }
+  
+  await route.deleteOne();
+  res.json({ message: 'Route removed' });
+});
+
 module.exports = {
   createRoute,
+  getRoutes,
+  getRouteById,
+  updateRoute,
+  deleteRoute,
   getRecentRoutes,
   searchRoutes,
   getRouteBookings,
-  updateRouteStatus
+  updateRouteStatus,
+  calculateDistance,
+  calculateDirectionSimilarity
 };

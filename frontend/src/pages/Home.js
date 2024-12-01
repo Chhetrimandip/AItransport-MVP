@@ -27,6 +27,11 @@ import {
   ModalHeader,
   ModalBody,
   ModalCloseButton,
+  Tabs,
+  TabList,
+  Tab,
+  TabPanels,
+  TabPanel,
 } from '@chakra-ui/react';
 import { TimeIcon, CalendarIcon, StarIcon, AddIcon } from '@chakra-ui/icons';
 import { FaCar, FaRoute, FaHistory } from 'react-icons/fa';
@@ -35,6 +40,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import BookingModal from '../components/BookingModal';
 import RouteBookings from '../components/RouteBookings';
+import UserBookings from '../components/UserBookings';
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -69,6 +75,7 @@ const Home = () => {
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isRouteBookingsModalOpen, setIsRouteBookingsModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('search'); // 'search' or 'bookings'
 
 
 
@@ -494,28 +501,26 @@ const { data } = await api.post('/routes/search', searchData);
         <Heading size="md" mb={4}>My Active Routes</Heading>
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
           {recentRoutes.map(route => (
-            <Card key={route._id}>
-              <CardBody>
-                <VStack align="start" spacing={2}>
-                  <Heading size="sm">
-                    {route.startLocation.address.split(',')[0]} → {route.endLocation.address.split(',')[0]}
-                  </Heading>
-                  <HStack>
-                    <Icon as={TimeIcon} />
-                    <Text fontSize="sm">
-                      {new Date(route.departureTime).toLocaleTimeString()}
-                    </Text>
-                  </HStack>
-                  <Text fontSize="sm" color="gray.600">
-                    Vehicle: {route.vehicle?.vehicleNumber || 'N/A'}
-                  </Text>
-                  <Badge colorScheme="green">
-                    {route.availableSeats} seats available
-                  </Badge>
-                  <Text fontSize="sm">Fare: Rs {route.fare}</Text>
-                </VStack>
-              </CardBody>
-            </Card>
+            <Box key={route._id} p={4} borderWidth={1} borderRadius="lg" shadow="sm">
+              <VStack align="start" spacing={2}>
+                <Text fontWeight="bold">
+                  {route.startLocation.address} → {route.endLocation.address}
+                </Text>
+                <Text>Available Seats: {route.availableSeats}</Text>
+                <Text>Departure: {new Date(route.departureTime).toLocaleString()}</Text>
+                <Text>Fare: Rs {route.fare}</Text>
+                <Button
+                  size="sm"
+                  colorScheme="blue"
+                  onClick={() => {
+                    setSelectedRoute(route);
+                    setIsRouteBookingsModalOpen(true);
+                  }}
+                >
+                  View Bookings
+                </Button>
+              </VStack>
+            </Box>
           ))}
         </SimpleGrid>
       </Box>
@@ -524,145 +529,158 @@ const { data } = await api.post('/routes/search', searchData);
 
   const renderUserContent = () => (
     <VStack spacing={6} align="stretch">
-      {/* Welcome Section */}
-      <Box py={2}>
-        <Heading size="md" mb={1}>
-          Welcome back, {user?.name}!
-        </Heading>
-        <Text fontSize="sm" color="gray.600">
-          Find and book your next journey with ease.
-        </Text>
-      </Box>
-
-      {/* Quick Actions */}
-      <SimpleGrid columns={{ base: 1, md: 3 }} spacing={3}>
-        <Card variant="outline">
-          <CardBody p={4}>
-            <VStack align="start" spacing={2}>
-              <Icon as={CalendarIcon} boxSize={5} color="blue.500" />
-              <Heading size="sm">Book a Route</Heading>
-              <Text fontSize="xs" color="gray.600">
-                Search and book available transport routes
-              </Text>
-              <Button colorScheme="blue" size="sm" width="100%">
-                Book Now
-              </Button>
-            </VStack>
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardBody>
-            <VStack align="start" spacing={4}>
-              <Icon as={TimeIcon} boxSize={6} color="green.500" />
-              <Heading size="sm">View Schedule</Heading>
+      <Tabs onChange={(index) => setActiveTab(index === 0 ? 'search' : 'bookings')}>
+        <TabList>
+          <Tab>Search Routes</Tab>
+          <Tab>My Bookings</Tab>
+        </TabList>
+        <TabPanels>
+          <TabPanel>
+            {/* Welcome Section */}
+            <Box py={2}>
+              <Heading size="md" mb={1}>
+                Welcome back, {user?.name}!
+              </Heading>
               <Text fontSize="sm" color="gray.600">
-                Check your upcoming bookings
+                Find and book your next journey with ease.
               </Text>
-              <Button colorScheme="green" size="sm">
-                View Schedule
-              </Button>
-            </VStack>
-          </CardBody>
-        </Card>
+            </Box>
 
-        <Card>
-          <CardBody>
-            <VStack align="start" spacing={4}>
-              <Icon as={StarIcon} boxSize={6} color="purple.500" />
-              <Heading size="sm">Recent Routes</Heading>
-              <Text fontSize="sm" color="gray.600">
-                View your recent travel history
-              </Text>
-              <Button colorScheme="purple" size="sm">
-                View History
-              </Button>
-            </VStack>
-          </CardBody>
-        </Card>
-      </SimpleGrid>
-
-      {/* Map Section */}
-      <Box>
-        <Heading size="md" mb={2}>Select Route</Heading>
-        <Map onLocationSelect={handleLocationSelect} />
-      </Box>
-
-      {/* Time Selection Form */}
-      <Box 
-        p={4} 
-        bg="white" 
-        borderRadius="lg" 
-        shadow="sm" 
-        width="100%"
-        mt={4}
-      >
-        <form onSubmit={handleTimeSubmit}>
-          <FormControl>
-            <FormLabel>Preferred Boarding Time</FormLabel>
-            <HStack spacing={4}>
-              <Input
-                type="time"
-                value={selectedTime}
-                onChange={(e) => setSelectedTime(e.target.value)}
-                required
-                width="auto"
-              />
-              <Button 
-                type="submit" 
-                colorScheme="blue"
-                leftIcon={<TimeIcon />}
-              >
-                Search Routes
-              </Button>
-            </HStack>
-          </FormControl>
-        </form>
-      </Box>
-
-      {/* Available Routes */}
-      {availableRoutes.length > 0 && (
-        <Box>
-          <Heading size="md" mb={4}>Available Vehicles in the Route</Heading>
-          <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-            {availableRoutes.map(route => (
-              <Card key={route._id}>
-                <CardBody>
+            {/* Quick Actions */}
+            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={3}>
+              <Card variant="outline">
+                <CardBody p={4}>
                   <VStack align="start" spacing={2}>
-                    <Heading size="sm">
-                      {route.startLocation.address?.split(',')[0] || 'Loading...'} → {route.endLocation.address?.split(',')[0] || 'Loading...'}
-                    </Heading>
-                    <HStack>
-                      <Icon as={TimeIcon} />
-                      <Text fontSize="sm">
-                        {new Date(route.departureTime).toLocaleTimeString()}
-                      </Text>
-                    </HStack>
-                    <Text fontSize="sm" color="gray.600">
-                      Vehicle: {route.vehicle?.vehicleNumber || 'N/A'}
+                    <Icon as={CalendarIcon} boxSize={5} color="blue.500" />
+                    <Heading size="sm">Book a Route</Heading>
+                    <Text fontSize="xs" color="gray.600">
+                      Search and book available transport routes
                     </Text>
-                    <Text fontSize="sm" color="gray.600">
-                      Driver: {route.driver?.name || 'N/A'}
-                    </Text>
-                    <Badge colorScheme="green">
-                      {route.availableSeats} seats available
-                    </Badge>
-                    <Text fontSize="sm">Fare: Rs {route.fare}</Text>
-                    <Button 
-                      colorScheme="blue" 
-                      size="sm" 
-                      width="100%"
-                      onClick={() => handleBooking(route)}
-                    >
+                    <Button colorScheme="blue" size="sm" width="100%">
                       Book Now
                     </Button>
                   </VStack>
                 </CardBody>
               </Card>
-            ))}
-          </SimpleGrid>
-        </Box>
-      )}
+
+              <Card>
+                <CardBody>
+                  <VStack align="start" spacing={4}>
+                    <Icon as={TimeIcon} boxSize={6} color="green.500" />
+                    <Heading size="sm">View Schedule</Heading>
+                    <Text fontSize="sm" color="gray.600">
+                      Check your upcoming bookings
+                    </Text>
+                    <Button colorScheme="green" size="sm">
+                      View Schedule
+                    </Button>
+                  </VStack>
+                </CardBody>
+              </Card>
+
+              <Card>
+                <CardBody>
+                  <VStack align="start" spacing={4}>
+                    <Icon as={StarIcon} boxSize={6} color="purple.500" />
+                    <Heading size="sm">Recent Routes</Heading>
+                    <Text fontSize="sm" color="gray.600">
+                      View your recent travel history
+                    </Text>
+                    <Button colorScheme="purple" size="sm">
+                      View History
+                    </Button>
+                  </VStack>
+                </CardBody>
+              </Card>
+            </SimpleGrid>
+
+            {/* Map Section */}
+            <Box>
+              <Heading size="md" mb={2}>Select Route</Heading>
+              <Map onLocationSelect={handleLocationSelect} />
+            </Box>
+
+            {/* Time Selection Form */}
+            <Box 
+              p={4} 
+              bg="white" 
+              borderRadius="lg" 
+              shadow="sm" 
+              width="100%"
+              mt={4}
+            >
+              <form onSubmit={handleTimeSubmit}>
+                <FormControl>
+                  <FormLabel>Preferred Boarding Time</FormLabel>
+                  <HStack spacing={4}>
+                    <Input
+                      type="time"
+                      value={selectedTime}
+                      onChange={(e) => setSelectedTime(e.target.value)}
+                      required
+                      width="auto"
+                    />
+                    <Button 
+                      type="submit" 
+                      colorScheme="blue"
+                      leftIcon={<TimeIcon />}
+                    >
+                      Search Routes
+                    </Button>
+                  </HStack>
+                </FormControl>
+              </form>
+            </Box>
+
+            {/* Available Routes */}
+            {availableRoutes.length > 0 && (
+              <Box>
+                <Heading size="md" mb={4}>Available Vehicles in the Route</Heading>
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                  {availableRoutes.map(route => (
+                    <Card key={route._id}>
+                      <CardBody>
+                        <VStack align="start" spacing={2}>
+                          <Heading size="sm">
+                            {route.startLocation.address?.split(',')[0] || 'Loading...'} → {route.endLocation.address?.split(',')[0] || 'Loading...'}
+                          </Heading>
+                          <HStack>
+                            <Icon as={TimeIcon} />
+                            <Text fontSize="sm">
+                              {new Date(route.departureTime).toLocaleTimeString()}
+                            </Text>
+                          </HStack>
+                          <Text fontSize="sm" color="gray.600">
+                            Vehicle: {route.vehicle?.vehicleNumber || 'N/A'}
+                          </Text>
+                          <Text fontSize="sm" color="gray.600">
+                            Driver: {route.driver?.name || 'N/A'}
+                          </Text>
+                          <Badge colorScheme="green">
+                            {route.availableSeats} seats available
+                          </Badge>
+                          <Text fontSize="sm">Fare: Rs {route.fare}</Text>
+                          <Button 
+                            colorScheme="blue" 
+                            size="sm" 
+                            width="100%"
+                            onClick={() => handleBooking(route)}
+                          >
+                            Book Now
+                          </Button>
+                        </VStack>
+                      </CardBody>
+                    </Card>
+                  ))}
+                </SimpleGrid>
+              </Box>
+            )}
+          </TabPanel>
+          <TabPanel>
+            <UserBookings />
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
     </VStack>
   );
 

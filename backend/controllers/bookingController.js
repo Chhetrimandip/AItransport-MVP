@@ -11,7 +11,6 @@ const createBooking = asyncHandler(async (req, res) => {
     numberOfSeats,
     pickupLocation,
     dropoffLocation,
-    numberOfSeats,
     estimatedPickupTime
   } = req.body;
 

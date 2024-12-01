@@ -4,27 +4,29 @@ const { protect } = require('../middleware/authMiddleware');
 const {
   createRoute,
   getRoutes,
-  searchRoutes,
   getRouteById,
   updateRoute,
   deleteRoute,
   getRecentRoutes,
-  getRouteBookings,
-  updateRouteStatus
+  searchRoutes,
+  getRouteBookings
 } = require('../controllers/routeController');
 
-// Public routes
-router.get('/search', searchRoutes);
-router.get('/:id', getRouteById);
-
-// Protected routes
+// Apply protect middleware to all routes
 router.use(protect);
-router.post('/', createRoute);
-router.get('/', getRoutes);
+
+// Specific routes first
 router.get('/recent', getRecentRoutes);
+router.get('/search', searchRoutes);
+
+// Then parameter-based routes
+router.get('/:id/bookings', getRouteBookings);
+router.get('/:id', getRouteById);
 router.put('/:id', updateRoute);
 router.delete('/:id', deleteRoute);
-router.get('/:id/bookings', getRouteBookings);
-router.patch('/:id/status', updateRouteStatus);
+
+// Basic routes last
+router.post('/', createRoute);
+router.get('/', getRoutes);
 
 module.exports = router;
